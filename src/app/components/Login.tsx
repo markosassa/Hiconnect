@@ -82,7 +82,7 @@ export default function Login({ onLogin }: LoginProps) {
           </button>
 
           <p className="text-sm text-slate-500 text-center mt-4">
-            Credenziali default: admin / password
+            Credenziali default: admin / admin123
           </p>
         </form>
       </motion.div>

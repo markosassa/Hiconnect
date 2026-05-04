@@ -22,22 +22,33 @@ export default function GestioneUtenti({
   const [formData, setFormData] = useState({
     username: "",
     email: "",
+    password: "",
     role: "user" as "admin" | "user",
+    companyId: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const userData = {
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+      role: formData.role,
+      companyId: formData.companyId || null,
+    };
+
     if (editingUser) {
       setAppState({
         ...appState,
         users: appState.users.map((u) =>
-          u.id === editingUser.id ? { ...editingUser, ...formData } : u
+          u.id === editingUser.id ? { ...editingUser, ...userData } : u
         ),
       });
     } else {
       const newUser: User = {
         id: Date.now().toString(),
-        ...formData,
+        ...userData,
       };
       setAppState({
         ...appState,
@@ -52,7 +63,9 @@ export default function GestioneUtenti({
     setFormData({
       username: user.username,
       email: user.email,
+      password: user.password,
       role: user.role,
+      companyId: user.companyId || "",
     });
     setShowForm(true);
   };
@@ -67,10 +80,15 @@ export default function GestioneUtenti({
   };
 
   const resetForm = () => {
-    setFormData({ username: "", email: "", role: "user" });
+    setFormData({ username: "", email: "", password: "", role: "user", companyId: "" });
     setEditingUser(null);
     setShowForm(false);
   };
+
+  // Filtra utenti in base al ruolo
+  const visibleUsers = currentUser.role === "admin"
+    ? appState.users
+    : appState.users.filter(u => u.companyId === currentUser.companyId);
 
   return (
     <div className="flex">
@@ -131,24 +149,63 @@ export default function GestioneUtenti({
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required={!editingUser}
+                      placeholder={editingUser ? "Lascia vuoto per non modificare" : ""}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Ruolo
+                    </label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          role: e.target.value as "admin" | "user",
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="user">Utente</option>
+                      <option value="admin">Amministratore</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Ruolo
+                    Società
                   </label>
                   <select
-                    value={formData.role}
+                    value={formData.companyId}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        role: e.target.value as "admin" | "user",
-                      })
+                      setFormData({ ...formData, companyId: e.target.value })
                     }
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value="user">Utente</option>
-                    <option value="admin">Amministratore</option>
+                    <option value="">Nessuna società (Solo Admin)</option>
+                    {appState.companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.nome}
+                      </option>
+                    ))}
                   </select>
                 </div>
+
                 <div className="flex gap-2">
                   <button
                     type="submit"
@@ -179,6 +236,9 @@ export default function GestioneUtenti({
                     Email
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-medium text-slate-700">
+                    Società
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-slate-700">
                     Ruolo
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-medium text-slate-700">
@@ -187,40 +247,49 @@ export default function GestioneUtenti({
                 </tr>
               </thead>
               <tbody>
-                {appState.users.map((user) => (
-                  <tr key={user.id} className="border-t border-slate-200">
-                    <td className="px-6 py-4 text-slate-800">{user.username}</td>
-                    <td className="px-6 py-4 text-slate-600">{user.email}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          user.role === "admin"
-                            ? "bg-purple-100 text-purple-700"
-                            : "bg-blue-100 text-blue-700"
-                        }`}
-                      >
-                        {user.role === "admin" ? "Amministratore" : "Utente"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(user)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                {visibleUsers.map((user) => {
+                  const company = user.companyId
+                    ? appState.companies.find(c => c.id === user.companyId)
+                    : null;
+
+                  return (
+                    <tr key={user.id} className="border-t border-slate-200">
+                      <td className="px-6 py-4 text-slate-800">{user.username}</td>
+                      <td className="px-6 py-4 text-slate-600">{user.email}</td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {company ? company.nome : <span className="text-slate-400 italic">Nessuna</span>}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            user.role === "admin"
+                              ? "bg-purple-100 text-purple-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
                         >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user.id)}
-                          disabled={user.id === currentUser.id}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {user.role === "admin" ? "Amministratore" : "Utente"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(user)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user.id)}
+                            disabled={user.id === currentUser.id}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

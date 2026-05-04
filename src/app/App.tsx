@@ -13,7 +13,9 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  password: string;
   role: "admin" | "user";
+  companyId: string | null;
 }
 
 export interface Company {
@@ -27,6 +29,7 @@ export interface Attribute {
   id: string;
   nome: string;
   tipo: "text" | "number" | "boolean";
+  companyId: string | null;
 }
 
 export interface Recipient {
@@ -36,6 +39,7 @@ export interface Recipient {
   email: string;
   telefono: string;
   attributi: Record<string, any>;
+  companyId: string | null;
 }
 
 export interface Communication {
@@ -77,13 +81,42 @@ export default function App() {
 
     const storedState = localStorage.getItem("appState");
     if (storedState) {
-      setAppState(JSON.parse(storedState));
+      const parsedState = JSON.parse(storedState);
+
+      // Migrazione dati: aggiungi password e companyId se mancano
+      const migratedUsers = parsedState.users.map((u: any) => ({
+        ...u,
+        password: u.password || (u.username === "admin" ? "admin123" : "password"),
+        companyId: u.companyId !== undefined ? u.companyId : null,
+      }));
+
+      const migratedRecipients = parsedState.recipients?.map((r: any) => ({
+        ...r,
+        companyId: r.companyId !== undefined ? r.companyId : null,
+      })) || [];
+
+      const migratedAttributes = parsedState.attributes?.map((a: any) => ({
+        ...a,
+        companyId: a.companyId !== undefined ? a.companyId : null,
+      })) || [];
+
+      const migratedState = {
+        ...parsedState,
+        users: migratedUsers,
+        recipients: migratedRecipients,
+        attributes: migratedAttributes,
+      };
+
+      setAppState(migratedState);
+      localStorage.setItem("appState", JSON.stringify(migratedState));
     } else {
       const defaultAdmin: User = {
         id: "1",
         username: "admin",
         email: "admin@portale.it",
+        password: "admin123",
         role: "admin",
+        companyId: null,
       };
       const initialState: AppState = {
         users: [defaultAdmin],
@@ -105,7 +138,7 @@ export default function App() {
 
   const handleLogin = (username: string, password: string) => {
     const user = appState.users.find((u) => u.username === username);
-    if (user && password === "password") {
+    if (user && user.password === password) {
       setCurrentUser(user);
       localStorage.setItem("currentUser", JSON.stringify(user));
       return true;

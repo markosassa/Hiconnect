@@ -25,21 +25,28 @@ export default function GestioneDestinatari({
     email: "",
     telefono: "",
     attributi: {} as Record<string, any>,
+    companyId: currentUser.companyId || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const recipientData = {
+      ...formData,
+      companyId: currentUser.role === "admin" ? (formData.companyId || null) : currentUser.companyId,
+    };
+
     if (editingRecipient) {
       setAppState({
         ...appState,
         recipients: appState.recipients.map((r) =>
-          r.id === editingRecipient.id ? { ...editingRecipient, ...formData } : r
+          r.id === editingRecipient.id ? { ...editingRecipient, ...recipientData } : r
         ),
       });
     } else {
       const newRecipient: Recipient = {
         id: Date.now().toString(),
-        ...formData,
+        ...recipientData,
       };
       setAppState({
         ...appState,
@@ -57,6 +64,7 @@ export default function GestioneDestinatari({
       email: recipient.email,
       telefono: recipient.telefono,
       attributi: recipient.attributi,
+      companyId: recipient.companyId || "",
     });
     setShowForm(true);
   };
@@ -77,10 +85,21 @@ export default function GestioneDestinatari({
       email: "",
       telefono: "",
       attributi: {},
+      companyId: currentUser.companyId || "",
     });
     setEditingRecipient(null);
     setShowForm(false);
   };
+
+  // Filtra destinatari in base al ruolo
+  const visibleRecipients = currentUser.role === "admin"
+    ? appState.recipients
+    : appState.recipients.filter(r => r.companyId === currentUser.companyId);
+
+  // Filtra attributi della società corrente
+  const visibleAttributes = currentUser.role === "admin"
+    ? appState.attributes
+    : appState.attributes.filter(a => a.companyId === currentUser.companyId);
 
   const handleAttributeChange = (attributeId: string, value: any) => {
     setFormData({
@@ -180,11 +199,33 @@ export default function GestioneDestinatari({
                   </div>
                 </div>
 
-                {appState.attributes.length > 0 && (
+                {currentUser.role === "admin" && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Società
+                    </label>
+                    <select
+                      value={formData.companyId}
+                      onChange={(e) =>
+                        setFormData({ ...formData, companyId: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">Nessuna società</option>
+                      {appState.companies.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {company.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {visibleAttributes.length > 0 && (
                   <div>
                     <h3 className="text-sm font-medium text-slate-700 mb-3">Attributi</h3>
                     <div className="grid grid-cols-2 gap-4">
-                      {appState.attributes.map((attr) => (
+                      {visibleAttributes.map((attr) => (
                         <div key={attr.id}>
                           <label className="block text-sm text-slate-600 mb-2">
                             {attr.nome}
@@ -251,7 +292,7 @@ export default function GestioneDestinatari({
           )}
 
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            {appState.recipients.length === 0 ? (
+            {visibleRecipients.length === 0 ? (
               <div className="p-8 text-center text-slate-500">
                 Nessun destinatario presente. Clicca su "Nuovo Destinatario" per
                 aggiungerne uno.
@@ -278,7 +319,7 @@ export default function GestioneDestinatari({
                   </tr>
                 </thead>
                 <tbody>
-                  {appState.recipients.map((recipient) => (
+                  {visibleRecipients.map((recipient) => (
                     <tr key={recipient.id} className="border-t border-slate-200">
                       <td className="px-6 py-4 text-slate-800">{recipient.nome}</td>
                       <td className="px-6 py-4 text-slate-800">{recipient.cognome}</td>

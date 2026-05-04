@@ -40,13 +40,13 @@ export default function NuovaComunicazione({
     let destinatariIds: string[] = [];
 
     if (tipoDestinatari === "tutti") {
-      destinatariIds = appState.recipients.map((r) => r.id);
+      destinatariIds = visibleRecipients.map((r) => r.id);
     } else if (tipoDestinatari === "singolo") {
       destinatariIds = [destinatarioSelezionato];
     } else if (tipoDestinatari === "attributo") {
-      const attr = appState.attributes.find((a) => a.id === attributoFiltro);
+      const attr = visibleAttributes.find((a) => a.id === attributoFiltro);
       if (attr) {
-        destinatariIds = appState.recipients
+        destinatariIds = visibleRecipients
           .filter((r) => {
             const value = r.attributi[attributoFiltro];
             if (attr.tipo === "boolean") {
@@ -96,14 +96,14 @@ export default function NuovaComunicazione({
 
   const getDestinatariCount = () => {
     if (tipoDestinatari === "tutti") {
-      return appState.recipients.length;
+      return visibleRecipients.length;
     } else if (tipoDestinatari === "singolo") {
       return destinatarioSelezionato ? 1 : 0;
     } else if (tipoDestinatari === "attributo") {
       if (!attributoFiltro || !valoreFiltro) return 0;
-      const attr = appState.attributes.find((a) => a.id === attributoFiltro);
+      const attr = visibleAttributes.find((a) => a.id === attributoFiltro);
       if (!attr) return 0;
-      return appState.recipients.filter((r) => {
+      return visibleRecipients.filter((r) => {
         const value = r.attributi[attributoFiltro];
         if (attr.tipo === "boolean") {
           return value === (valoreFiltro === "true");
@@ -174,24 +174,33 @@ export default function NuovaComunicazione({
     setSearchAttributo("");
   };
 
-  const filteredRecipients = appState.recipients.filter(r =>
+  // Filtra destinatari e attributi in base alla società
+  const visibleRecipients = currentUser.role === "admin"
+    ? appState.recipients
+    : appState.recipients.filter(r => r.companyId === currentUser.companyId);
+
+  const visibleAttributes = currentUser.role === "admin"
+    ? appState.attributes
+    : appState.attributes.filter(a => a.companyId === currentUser.companyId);
+
+  const filteredRecipients = visibleRecipients.filter(r =>
     r.nome.toLowerCase().includes(searchDestinatario.toLowerCase()) ||
     r.cognome.toLowerCase().includes(searchDestinatario.toLowerCase()) ||
     r.email.toLowerCase().includes(searchDestinatario.toLowerCase())
   );
 
-  const filteredAttributes = appState.attributes.filter(a =>
+  const filteredAttributes = visibleAttributes.filter(a =>
     a.nome.toLowerCase().includes(searchAttributo.toLowerCase())
   );
 
-  const selectedRecipient = appState.recipients.find(r => r.id === destinatarioSelezionato);
-  const selectedAttribute = appState.attributes.find(a => a.id === attributoFiltro);
+  const selectedRecipient = visibleRecipients.find(r => r.id === destinatarioSelezionato);
+  const selectedAttribute = visibleAttributes.find(a => a.id === attributoFiltro);
 
   const isValid =
     oggetto.trim() &&
     contenuto.trim() &&
     canaliInvio.length > 0 &&
-    ((tipoDestinatari === "tutti" && appState.recipients.length > 0) ||
+    ((tipoDestinatari === "tutti" && visibleRecipients.length > 0) ||
       (tipoDestinatari === "singolo" && destinatarioSelezionato) ||
       (tipoDestinatari === "attributo" &&
         attributoFiltro &&
@@ -367,7 +376,7 @@ export default function NuovaComunicazione({
                 </motion.div>
               )}
 
-              {tipoDestinatari === "tutti" && appState.recipients.length === 0 && (
+              {tipoDestinatari === "tutti" && visibleRecipients.length === 0 && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800 text-sm">
                   Nessun destinatario presente. Aggiungi destinatari nella sezione Gestione
                   Destinatari.

@@ -22,21 +22,28 @@ export default function GestioneAttributi({
   const [formData, setFormData] = useState({
     nome: "",
     tipo: "text" as "text" | "number" | "boolean",
+    companyId: currentUser.companyId || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const attributeData = {
+      ...formData,
+      companyId: currentUser.role === "admin" ? (formData.companyId || null) : currentUser.companyId,
+    };
+
     if (editingAttribute) {
       setAppState({
         ...appState,
         attributes: appState.attributes.map((a) =>
-          a.id === editingAttribute.id ? { ...editingAttribute, ...formData } : a
+          a.id === editingAttribute.id ? { ...editingAttribute, ...attributeData } : a
         ),
       });
     } else {
       const newAttribute = {
         id: Date.now().toString(),
-        ...formData,
+        ...attributeData,
       };
       setAppState({
         ...appState,
@@ -51,6 +58,7 @@ export default function GestioneAttributi({
     setFormData({
       nome: attribute.nome,
       tipo: attribute.tipo,
+      companyId: attribute.companyId || "",
     });
     setShowForm(true);
   };
@@ -65,10 +73,15 @@ export default function GestioneAttributi({
   };
 
   const resetForm = () => {
-    setFormData({ nome: "", tipo: "text" });
+    setFormData({ nome: "", tipo: "text", companyId: currentUser.companyId || "" });
     setEditingAttribute(null);
     setShowForm(false);
   };
+
+  // Filtra attributi in base al ruolo
+  const visibleAttributes = currentUser.role === "admin"
+    ? appState.attributes
+    : appState.attributes.filter(a => a.companyId === currentUser.companyId);
 
   return (
     <div className="flex">
@@ -133,6 +146,29 @@ export default function GestioneAttributi({
                     </select>
                   </div>
                 </div>
+
+                {currentUser.role === "admin" && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Società
+                    </label>
+                    <select
+                      value={formData.companyId}
+                      onChange={(e) =>
+                        setFormData({ ...formData, companyId: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">Nessuna società</option>
+                      {appState.companies.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {company.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <button
                     type="submit"
@@ -153,7 +189,7 @@ export default function GestioneAttributi({
           )}
 
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            {appState.attributes.length === 0 ? (
+            {visibleAttributes.length === 0 ? (
               <div className="p-8 text-center text-slate-500">
                 Nessun attributo presente. Clicca su "Nuovo Attributo" per aggiungerne uno.
               </div>
@@ -173,7 +209,7 @@ export default function GestioneAttributi({
                   </tr>
                 </thead>
                 <tbody>
-                  {appState.attributes.map((attribute) => (
+                  {visibleAttributes.map((attribute) => (
                     <tr key={attribute.id} className="border-t border-slate-200">
                       <td className="px-6 py-4 text-slate-800">{attribute.nome}</td>
                       <td className="px-6 py-4">
