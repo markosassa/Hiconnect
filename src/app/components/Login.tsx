@@ -1,22 +1,24 @@
-import { useState } from "react";
 import { LogIn } from "lucide-react";
 import { motion } from "motion/react";
+import { useState } from "react";
+import axios from "axios";
+import { useAuth } from "../../hooks/useAuth";
 
-interface LoginProps {
-  onLogin: (username: string, password: string) => boolean;
-}
-
-export default function Login({ onLogin }: LoginProps) {
+export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+    axios.defaults.baseURL = "http://localhost:8000";
+    axios.defaults.withCredentials = true;
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = onLogin(username, password);
-    if (!success) {
+
+    const ok = await login(username, password);
+
+    if (!ok) {
       setError("Credenziali non valide");
-      setTimeout(() => setError(""), 3000);
     }
   };
 
