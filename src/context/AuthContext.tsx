@@ -1,5 +1,5 @@
 import { createContext, useEffect, useState, ReactNode } from "react";
-import axios from "axios";
+import axios from "../lib/axios";
 import { User, Role, Funzione } from "../types/auth";
 
 
@@ -21,26 +21,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [funzioni, setFunzioni] = useState<Funzione[]>([]);
   const [loading, setLoading] = useState(true);
 
-  axios.defaults.baseURL = "http://localhost:8000";
-  axios.defaults.withCredentials = true;
+  
 
   // 🔹 recupero sessione al refresh
   useEffect(() => {
-    const fetchMe = async () => {
-      try {
-        const res = await axios.get("/api/me");
-        setUser(res.data.user);
-        setRoles(res.data.roles);
-        setFunzioni(res.data.funzioni);
-      } catch {
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchMe();
-  }, []);
+  const fetchMe = async () => {
+
+    try {
+
+      const res = await axios.get("/api/me");
+
+      setUser(res.data.user);
+      setRoles(res.data.roles);
+      setFunzioni(res.data.funzioni);
+
+    } catch (err) {
+
+      console.error(err);
+
+      setUser(null);
+      setRoles([]);
+      setFunzioni([]);
+
+    } finally {
+
+      setLoading(false);
+    }
+  };
+
+  fetchMe();
+
+}, []);
 
   // 🔹 login
   const login = async (email: string, password: string) => {
@@ -48,25 +60,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await axios.get("/sanctum/csrf-cookie");
 
       const res = await axios.post("/login", { email, password });
+      const me = await axios.get("/api/me");
 
-      setUser(res.data.user);
-      setRoles(res.data.roles);
-      setFunzioni(res.data.funzioni);
+      setUser(me.data.user);
+      setRoles(me.data.roles);
+      setFunzioni(me.data.funzioni);
+      
 
       return true;
     } catch {
+      setUser(null);
+      setRoles([]);
+      setFunzioni([]);
+
       return false;
     }
   };
 
   // 🔹 logout
   const logout = async () => {
-    await axios.post("/logout");
+  try {
+
+    await axios.post("/api/logout");
+
+  } catch (err) {
+
+    console.error(err);
+
+  } finally {
+
     setUser(null);
     setRoles([]);
     setFunzioni([]);
-    
-  };
+
+    window.location.href = "/login";
+  }
+};
 
   // 🔹 check permessi
   const hasFunzione = (slug: string) => {

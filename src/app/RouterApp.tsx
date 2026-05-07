@@ -10,6 +10,8 @@ import GestioneDestinatari from "./components/GestioneDestinatari";
 import GestioneAttributi from "./components/GestioneAttributi";
 import NuovaComunicazione from "./components/NuovaComunicazione";
 import StoricoComunicazioni from "./components/StoricoComunicazioni";
+import GestioneRuoli from "./components/GestioneRuoli";
+import GestioneFunzioni from "./components/GestioneFunzioni";
 
 import RequireFunzione from "../router/RequireFunzione";
 import { AppState } from "../types/app";
@@ -56,6 +58,22 @@ export default function RouterApp() {
               element={
                 <RequireFunzione slug="societa">
                   <GestioneSocieta appState={appState} />
+                </RequireFunzione>
+              }
+            />
+            <Route
+              path="/ruoli"
+              element={
+                <RequireFunzione slug="ruoli">
+                  <GestioneRuoli appState={appState} />
+                </RequireFunzione>
+              }
+            />
+            <Route
+              path="/funzioni"
+              element={
+                <RequireFunzione slug="funzioni">
+                  <GestioneFunzioni appState={appState} />
                 </RequireFunzione>
               }
             />

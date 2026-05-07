@@ -1,41 +1,57 @@
 import { LogIn } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
-import axios from "axios";
+import api from "../../lib/axios";
+import { useNavigate } from "react-router-dom";
+
 import { useAuth } from "../../hooks/useAuth";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-    axios.defaults.baseURL = "http://localhost:8000";
-    axios.defaults.withCredentials = true;
+
   const { login } = useAuth();
 
+  const navigate = useNavigate();
+
   const handleSubmit = async (e: React.FormEvent) => {
+
     e.preventDefault();
 
     const ok = await login(username, password);
 
     if (!ok) {
       setError("Credenziali non valide");
+      return;
     }
+
+    navigate("/");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-zinc-200 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md"
       >
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <LogIn className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-semibold text-slate-800">Portale Comunicazioni</h1>
-          <p className="text-slate-600 mt-2">Accedi al tuo account</p>
-        </div>
+  <div className="text-center mb-8">
+
+  <div className="flex justify-center mb-6">
+
+    <img
+      src="/logo.png"
+      alt="HiConnect"
+      className="h-24 object-contain"
+    />
+
+  </div>
+
+  <p className="text-slate-600 mt-2">
+    Accedi al tuo account
+  </p>
+</div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -78,7 +94,7 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            className="w-full bg-emerald-600 text-white py-3 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
           >
             Accedi
           </button>

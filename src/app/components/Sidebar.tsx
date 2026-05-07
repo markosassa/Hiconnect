@@ -8,6 +8,9 @@ import {
   Send,
   History,
   LogOut,
+  Settings,
+  Shield,
+  BadgeCheck,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -27,6 +30,12 @@ export default function Sidebar() {
     ...(hasFunzione("societa")
       ? [{ path: "/societa", icon: Building2, label: "Gestione Società" }]
       : []),
+    ...(hasFunzione("ruoli")
+    ? [{ path: "/ruoli", icon: Shield, label: "Gestione Ruoli" }]
+    : []),
+    ...(hasFunzione("funzioni")
+    ? [{ path: "/funzioni", icon: BadgeCheck, label: "Gestione Funzioni" }]
+    : []),
 
     ...(hasFunzione("destinatari")
       ? [{ path: "/destinatari", icon: UserCheck, label: "Gestione Destinatari" }]
@@ -46,13 +55,28 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="w-64 bg-slate-800 min-h-screen flex flex-col">
-      <div className="p-6 border-b border-slate-700">
-        <h2 className="text-white text-lg font-semibold">Portale</h2>
-        <p className="text-slate-400 text-sm mt-1">
+    <div className="w-64 bg-emerald-900 min-h-screen flex flex-col">
+
+  <div className="p-6 border-b border-emerald-700">
+
+    <div className="flex items-center gap-3">
+
+      <img
+        src="/logo2.png"
+        alt="Logo"
+        className="w-12 h-12 rounded-xl object-contain bg-white p-2 shadow"
+      />
+
+      <div>
+        
+
+        <p className="text-white text-sm mt-1">
           {user.nome ?? user.email}
         </p>
       </div>
+
+    </div>
+  </div>
 
       <nav className="flex-1 p-4">
         {menuItems.map((item) => {
@@ -65,8 +89,8 @@ export default function Sidebar() {
               to={item.path}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
                 isActive
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-300 hover:bg-slate-700"
+                  ? "bg-emerald-600 text-white"
+                  : "text-white hover:bg-emerald-700"
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -76,10 +100,10 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-700">
+      <div className="p-4 border-t border-emerald-700">
         <button
           onClick={logout}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition-colors w-full"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-emerald-700 transition-colors w-full"
         >
           <LogOut className="w-5 h-5" />
           <span>Esci</span>
