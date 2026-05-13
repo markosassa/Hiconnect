@@ -1,215 +1,779 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 import Sidebar from "./Sidebar";
-import { User, AppState, Communication } from "../App";
-import { Send, Users, User as UserIcon, Filter, Mail, MessageCircle, Link2, Paperclip, Type, Bold, Italic, Underline, Search, X } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+
+import {
+  Send,
+  Users,
+  User as UserIcon,
+  Filter,
+  Mail,
+  MessageCircle,
+  Link2,
+  Paperclip,
+  Type,
+  Bold,
+  Italic,
+  Underline,
+  Search,
+  X,
+} from "lucide-react";
+
+import {
+  motion,
+} from "motion/react";
+
 import * as Dialog from "@radix-ui/react-dialog";
 
-interface NuovaComunicazioneProps {
-  currentUser: User;
-  onLogout: () => void;
-  appState: AppState;
-  setAppState: (state: AppState) => void;
-}
+import axios from "axios";
 
-export default function NuovaComunicazione({
-  currentUser,
-  onLogout,
-  appState,
-  setAppState,
-}: NuovaComunicazioneProps) {
-  const [tipoDestinatari, setTipoDestinatari] = useState<
-    "tutti" | "singolo" | "attributo"
+import { useAuth } from "../../hooks/useAuth";
+
+/**
+ * TYPES
+ */
+
+type RecipientAttribute = {
+  idattributo: number;
+  iddestinatario:number;
+  nomeattributo: string;
+  valore: string;
+};
+
+type Recipient = {
+  codsoc: number;
+  iddestinatario: number;
+  nome: string;
+  cognome: string;
+  email: string | null;
+  telefono: string | null;
+
+  attributi:
+    RecipientAttribute[];
+};
+
+type Attributo = {
+  codsoc: number;
+  idattributo: number;
+  nomeattributo: string;
+  tipoattributo: number;
+};
+
+export default function NuovaComunicazione() {
+
+  const {
+    user,
+    hasFunzione,
+  } = useAuth();
+
+  /**
+   * STATES
+   */
+
+  const [
+    recipients,
+    setRecipients,
+  ] = useState<
+    Recipient[]
+  >([]);
+
+  const [
+    attributes,
+    setAttributes,
+  ] = useState<
+    Attributo[]
+  >([]);
+
+  const [
+    tipoDestinatari,
+    setTipoDestinatari,
+  ] = useState<
+    "tutti" |
+    "singolo" |
+    "attributo"
   >("tutti");
-  const [destinatarioSelezionato, setDestinatarioSelezionato] = useState("");
-  const [attributoFiltro, setAttributoFiltro] = useState("");
-  const [valoreFiltro, setValoreFiltro] = useState("");
-  const [oggetto, setOggetto] = useState("");
-  const [contenuto, setContenuto] = useState("");
-  const [links, setLinks] = useState<string[]>([]);
-  const [allegati, setAllegati] = useState<File[]>([]);
-  const [canaliInvio, setCanaliInvio] = useState<("email" | "whatsapp")[]>(["email"]);
-  const [inviato, setInviato] = useState(false);
 
-  const [showDestinatarioDialog, setShowDestinatarioDialog] = useState(false);
-  const [showAttributoDialog, setShowAttributoDialog] = useState(false);
-  const [searchDestinatario, setSearchDestinatario] = useState("");
-  const [searchAttributo, setSearchAttributo] = useState("");
+  const [
+    destinatarioSelezionato,
+    setDestinatarioSelezionato,
+  ] = useState<number | null>(
+    null
+  );
 
-  const handleInvia = () => {
-    let destinatariIds: string[] = [];
+  const [
+    attributoFiltro,
+    setAttributoFiltro,
+  ] = useState<number | null>(
+    null
+  );
 
-    if (tipoDestinatari === "tutti") {
-      destinatariIds = visibleRecipients.map((r) => r.id);
-    } else if (tipoDestinatari === "singolo") {
-      destinatariIds = [destinatarioSelezionato];
-    } else if (tipoDestinatari === "attributo") {
-      const attr = visibleAttributes.find((a) => a.id === attributoFiltro);
-      if (attr) {
-        destinatariIds = visibleRecipients
-          .filter((r) => {
-            const value = r.attributi[attributoFiltro];
-            if (attr.tipo === "boolean") {
-              return value === (valoreFiltro === "true");
-            } else {
-              return value?.toString() === valoreFiltro;
-            }
-          })
-          .map((r) => r.id);
+  const [
+    valoreFiltro,
+    setValoreFiltro,
+  ] = useState("");
+
+  const [
+    oggetto,
+    setOggetto,
+  ] = useState("");
+
+  const [
+    contenuto,
+    setContenuto,
+  ] = useState("");
+
+  const [
+    links,
+    setLinks,
+  ] = useState<string[]>([]);
+
+  const [
+    allegati,
+    setAllegati,
+  ] = useState<File[]>([]);
+
+  const [
+    canaliInvio,
+    setCanaliInvio,
+  ] = useState<
+    ("email" | "whatsapp")[]
+  >(["email"]);
+
+  const [
+    showDestinatarioDialog,
+    setShowDestinatarioDialog,
+  ] = useState(false);
+
+  const [
+    showAttributoDialog,
+    setShowAttributoDialog,
+  ] = useState(false);
+
+  const [
+    searchDestinatario,
+    setSearchDestinatario,
+  ] = useState("");
+
+  const [
+    searchAttributo,
+    setSearchAttributo,
+  ] = useState("");
+
+  const [
+    inviato,
+    setInviato,
+  ] = useState(false);
+
+  /**
+   * FETCH
+   */
+
+  const fetchRecipients =
+    async () => {
+
+      try {
+
+        const res =
+          await axios.get(
+            `/api/recipients/${user?.codsoc}`,
+            
+          );
+          console.log(res);
+        setRecipients(
+          res.data.data || []
+        );
+
+      } catch (err) {
+
+        console.error(err);
+
+        setRecipients([]);
       }
-    }
-
-    const newCommunication: Communication = {
-      id: Date.now().toString(),
-      data: new Date().toISOString(),
-      destinatari: destinatariIds,
-      tipoDestinatari,
-      filtroAttributo:
-        tipoDestinatari === "attributo"
-          ? { attributoId: attributoFiltro, valore: valoreFiltro }
-          : undefined,
-      oggetto,
-      contenuto,
-      links,
-      allegati: allegati.map(f => f.name),
-      canaliInvio,
     };
 
-    setAppState({
-      ...appState,
-      communications: [...appState.communications, newCommunication],
-    });
+  const fetchAttributes =
+    async () => {
 
-    setInviato(true);
-    setTimeout(() => {
-      setInviato(false);
-      setOggetto("");
-      setContenuto("");
-      setLinks([]);
-      setAllegati([]);
-      setDestinatarioSelezionato("");
-      setAttributoFiltro("");
-      setValoreFiltro("");
-      setCanaliInvio(["email"]);
-    }, 2000);
-  };
+      try {
 
-  const getDestinatariCount = () => {
-    if (tipoDestinatari === "tutti") {
-      return visibleRecipients.length;
-    } else if (tipoDestinatari === "singolo") {
-      return destinatarioSelezionato ? 1 : 0;
-    } else if (tipoDestinatari === "attributo") {
-      if (!attributoFiltro || !valoreFiltro) return 0;
-      const attr = visibleAttributes.find((a) => a.id === attributoFiltro);
-      if (!attr) return 0;
-      return visibleRecipients.filter((r) => {
-        const value = r.attributi[attributoFiltro];
-        if (attr.tipo === "boolean") {
-          return value === (valoreFiltro === "true");
-        } else {
-          return value?.toString() === valoreFiltro;
-        }
-      }).length;
-    }
-    return 0;
-  };
+        const res =
+          await axios.get(
+            "/api/attributes",
+            {
+              params: {
+                codsoc:
+                  user?.codsoc,
+              },
+            }
+          );
 
-  const applyFormatting = (tag: string) => {
-    const textarea = document.getElementById("content-editor") as HTMLTextAreaElement;
-    if (!textarea) return;
+        setAttributes(
+          res.data.data || []
+        );
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = contenuto.substring(start, end);
+      } catch (err) {
 
-    if (selectedText) {
-      const before = contenuto.substring(0, start);
-      const after = contenuto.substring(end);
-      const formatted = `<${tag}>${selectedText}</${tag}>`;
-      setContenuto(before + formatted + after);
-    }
-  };
+        console.error(err);
 
-  const addLink = (link: string) => {
-    if (links.length < 3 && link.trim()) {
-      setLinks([...links, link.trim()]);
-    }
-  };
+        setAttributes([]);
+      }
+    };
+    const handleSelectDestinatario =
+  (
+    recipientId: number
+  ) => {
 
-  const removeLink = (index: number) => {
-    setLinks(links.filter((_, i) => i !== index));
-  };
+    setDestinatarioSelezionato(
+      recipientId
+    );
 
-  const addAllegato = (file: File) => {
-    if (allegati.length < 3) {
-      setAllegati([...allegati, file]);
-    }
-  };
+    setTipoDestinatari(
+      "singolo"
+    );
 
-  const removeAllegato = (index: number) => {
-    setAllegati(allegati.filter((_, i) => i !== index));
-  };
+    setShowDestinatarioDialog(
+      false
+    );
 
-  const toggleCanale = (canale: "email" | "whatsapp") => {
-    if (canaliInvio.includes(canale)) {
-      setCanaliInvio(canaliInvio.filter(c => c !== canale));
-    } else {
-      setCanaliInvio([...canaliInvio, canale]);
-    }
-  };
-
-  const handleSelectDestinatario = (recipientId: string) => {
-    setDestinatarioSelezionato(recipientId);
-    setTipoDestinatari("singolo");
-    setShowDestinatarioDialog(false);
     setSearchDestinatario("");
   };
+  const handleSelectAttributo =
+  (
+    attributeId: number
+  ) => {
 
-  const handleSelectAttributo = (attributeId: string) => {
-    setAttributoFiltro(attributeId);
+    setAttributoFiltro(
+      attributeId
+    );
+
     setValoreFiltro("");
-    setTipoDestinatari("attributo");
-    setShowAttributoDialog(false);
+
+    setTipoDestinatari(
+      "attributo"
+    );
+
+    setShowAttributoDialog(
+      false
+    );
+
     setSearchAttributo("");
   };
+  useEffect(() => {
 
-  // Filtra destinatari e attributi in base alla società
-  const visibleRecipients = currentUser.role === "admin"
-    ? appState.recipients
-    : appState.recipients.filter(r => r.companyId === currentUser.companyId);
+    if (
+      user &&
+      hasFunzione(
+        "nuova-comunicazione"
+      )
+    ) {
 
-  const visibleAttributes = currentUser.role === "admin"
-    ? appState.attributes
-    : appState.attributes.filter(a => a.companyId === currentUser.companyId);
+      fetchRecipients();
+      fetchAttributes();
+    }
 
-  const filteredRecipients = visibleRecipients.filter(r =>
-    r.nome.toLowerCase().includes(searchDestinatario.toLowerCase()) ||
-    r.cognome.toLowerCase().includes(searchDestinatario.toLowerCase()) ||
-    r.email.toLowerCase().includes(searchDestinatario.toLowerCase())
-  );
+  }, [user]);
 
-  const filteredAttributes = visibleAttributes.filter(a =>
-    a.nome.toLowerCase().includes(searchAttributo.toLowerCase())
-  );
+  /**
+   * FILTERS
+   */
 
-  const selectedRecipient = visibleRecipients.find(r => r.id === destinatarioSelezionato);
-  const selectedAttribute = visibleAttributes.find(a => a.id === attributoFiltro);
+  const filteredRecipients =
+    recipients.filter(
+      (r) =>
+
+        r.nome
+          .toLowerCase()
+          .includes(
+            searchDestinatario.toLowerCase()
+          )
+
+        ||
+
+        r.cognome
+          .toLowerCase()
+          .includes(
+            searchDestinatario.toLowerCase()
+          )
+
+        ||
+
+        (r.email || "")
+          .toLowerCase()
+          .includes(
+            searchDestinatario.toLowerCase()
+          )
+    );
+
+  const filteredAttributes =
+    attributes.filter(
+      (a) =>
+
+        a.nomeattributo
+          .toLowerCase()
+          .includes(
+            searchAttributo.toLowerCase()
+          )
+    );
+
+  /**
+   * SELECTED
+   */
+
+  const selectedRecipient =
+    recipients.find(
+      (r) =>
+        r.iddestinatario ===
+        destinatarioSelezionato
+    );
+
+  const selectedAttribute =
+    attributes.find(
+      (a) =>
+        a.idattributo ===
+        attributoFiltro
+    );
+
+  /**
+   * COUNT
+   */
+
+  const getDestinatariCount =
+    () => {
+
+      if (
+        tipoDestinatari ===
+        "tutti"
+      ) {
+
+        return recipients.length;
+      }
+
+      if (
+        tipoDestinatari ===
+        "singolo"
+      ) {
+
+        return destinatarioSelezionato
+          ? 1
+          : 0;
+      }
+
+      if (
+        tipoDestinatari ===
+        "attributo"
+      ) {
+
+        return recipients.filter(
+          (r) => {
+
+            const attr =
+              r.attributi.find(
+                (a) =>
+                  a.idattributo ===
+                  attributoFiltro
+              );
+
+            return (
+              attr?.valore ===
+              valoreFiltro
+            );
+          }
+        ).length;
+      }
+
+      return 0;
+    };
+
+  /**
+   * FORMATTER
+   */
+
+  const applyFormatting =
+    (tag: string) => {
+
+      const textarea =
+        document.getElementById(
+          "content-editor"
+        ) as HTMLTextAreaElement;
+
+      if (!textarea) return;
+
+      const start =
+        textarea.selectionStart;
+
+      const end =
+        textarea.selectionEnd;
+
+      const selectedText =
+        contenuto.substring(
+          start,
+          end
+        );
+
+      if (selectedText) {
+
+        const before =
+          contenuto.substring(
+            0,
+            start
+          );
+
+        const after =
+          contenuto.substring(
+            end
+          );
+
+        const formatted =
+          `<${tag}>${selectedText}</${tag}>`;
+
+        setContenuto(
+          before +
+          formatted +
+          after
+        );
+      }
+    };
+
+  /**
+   * LINKS
+   */
+
+  const addLink =
+    (link: string) => {
+
+      if (
+        links.length < 3 &&
+        link.trim()
+      ) {
+
+        setLinks([
+          ...links,
+          link.trim(),
+        ]);
+      }
+    };
+
+  const removeLink =
+    (index: number) => {
+
+      setLinks(
+        links.filter(
+          (_, i) =>
+            i !== index
+        )
+      );
+    };
+
+  /**
+   * ALLEGATI
+   */
+
+  const addAllegato =
+    (file: File) => {
+
+      if (
+        allegati.length < 3
+      ) {
+
+        setAllegati([
+          ...allegati,
+          file,
+        ]);
+      }
+    };
+
+  const removeAllegato =
+    (index: number) => {
+
+      setAllegati(
+        allegati.filter(
+          (_, i) =>
+            i !== index
+        )
+      );
+    };
+
+  /**
+   * CANALI
+   */
+
+  const toggleCanale =
+    (
+      canale:
+        | "email"
+        | "whatsapp"
+    ) => {
+
+      if (
+        canaliInvio.includes(
+          canale
+        )
+      ) {
+
+        setCanaliInvio(
+          canaliInvio.filter(
+            (c) =>
+              c !== canale
+          )
+        );
+
+      } else {
+
+        setCanaliInvio([
+          ...canaliInvio,
+          canale,
+        ]);
+      }
+    };
+
+  /**
+   * INVIO
+   */
+
+  const handleInvia = async () => {
+
+  try {
+
+    let destinatari: number[] = [];
+
+    /**
+     * DESTINATARI
+     */
+
+    if (tipoDestinatari === "tutti") {
+
+      destinatari =
+        recipients.map(
+          (r) => r.iddestinatario
+        );
+    }
+
+    if (
+      tipoDestinatari === "singolo" &&
+      destinatarioSelezionato
+    ) {
+
+      destinatari = [
+        destinatarioSelezionato,
+      ];
+    }
+
+    if (
+      tipoDestinatari === "attributo"
+    ) {
+
+      destinatari =
+        recipients
+          .filter((r) => {
+
+            const attr =
+              r.attributi.find(
+                (a) =>
+                  a.idattributo ===
+                  attributoFiltro
+              );
+
+            return (
+              attr?.valore ===
+              valoreFiltro
+            );
+          })
+          .map(
+            (r) =>
+              r.iddestinatario
+          );
+    }
+
+    /**
+     * VALIDAZIONE
+     */
+
+    if (destinatari.length === 0) {
+
+      alert(
+        "Nessun destinatario selezionato"
+      );
+
+      return;
+    }
+
+    /**
+     * FORM DATA
+     */
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      "codsoc",
+      String(user?.codsoc)
+    );
+
+    formData.append(
+      "oggetto",
+      oggetto
+    );
+
+    formData.append(
+      "contenuto",
+      contenuto
+    );
+
+    /**
+     * TIPO DESTINATARI
+     */
+
+    formData.append(
+      "tipoDestinatari",
+      tipoDestinatari
+    );
+
+    /**
+     * DESTINATARI
+     */
+
+    destinatari.forEach(
+      (iddestinatario, index) => {
+
+        formData.append(
+          `destinatari[${index}]`,
+          String(iddestinatario)
+        );
+      }
+    );
+
+    /**
+     * LINKS
+     */
+
+    links.forEach(
+      (link, index) => {
+
+        formData.append(
+          `links[${index}]`,
+          link
+        );
+      }
+    );
+
+    /**
+     * CANALI
+     */
+
+    canaliInvio.forEach(
+      (canale, index) => {
+
+        formData.append(
+          `canali[${index}]`,
+          canale
+        );
+      }
+    );
+
+    /**
+     * ALLEGATI
+     */
+
+    allegati.forEach(
+      (file, index) => {
+
+        formData.append(
+          `allegati[${index}]`,
+          file
+        );
+      }
+    );
+
+    /**
+     * API
+     */
+
+    await axios.post(
+      "/api/comunicazioni",
+      formData,
+      {
+        headers: {
+          "Content-Type":
+            "multipart/form-data",
+        },
+      }
+    );
+
+    /**
+     * SUCCESS
+     */
+
+    setInviato(true);
+
+    /**
+     * RESET
+     */
+
+    setOggetto("");
+
+    setContenuto("");
+
+    setLinks([]);
+
+    setAllegati([]);
+
+    setValoreFiltro("");
+
+    setAttributoFiltro(null);
+
+    setDestinatarioSelezionato(null);
+
+    setTipoDestinatari(
+      "tutti"
+    );
+
+    setCanaliInvio([
+      "email",
+    ]);
+
+  } catch (err) {
+
+    console.error(err);
+
+  } finally {
+
+    setTimeout(() => {
+
+      setInviato(false);
+
+    }, 2000);
+  }
+};
+  /**
+   * VALIDATION
+   */
 
   const isValid =
-    oggetto.trim() &&
-    contenuto.trim() &&
+    oggetto.trim().length > 0 &&
+    contenuto.trim().length > 0 &&
     canaliInvio.length > 0 &&
-    ((tipoDestinatari === "tutti" && visibleRecipients.length > 0) ||
-      (tipoDestinatari === "singolo" && destinatarioSelezionato) ||
-      (tipoDestinatari === "attributo" &&
-        attributoFiltro &&
-        valoreFiltro &&
-        getDestinatariCount() > 0));
+    getDestinatariCount() > 0;
+
+  /**
+   * ACL
+   */
+
+  if (
+    !hasFunzione(
+      "nuova-comunicazione"
+    )
+  ) {
+
+    return (
+      <div className="p-6 text-red-600">
+        Accesso negato
+      </div>
+    );
+  }
 
   return (
     <div className="flex">
-      <Sidebar currentUser={currentUser} onLogout={onLogout} />
+      <Sidebar  />
       <div className="flex-1 bg-slate-50 p-8">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
@@ -254,8 +818,8 @@ export default function NuovaComunicazione({
                 <button
                   onClick={() => {
                     setTipoDestinatari("tutti");
-                    setDestinatarioSelezionato("");
-                    setAttributoFiltro("");
+                    setDestinatarioSelezionato(null);
+                    setAttributoFiltro(null);
                     setValoreFiltro("");
                   }}
                   className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
@@ -307,7 +871,7 @@ export default function NuovaComunicazione({
                     </div>
                     <button
                       onClick={() => {
-                        setDestinatarioSelezionato("");
+                        setDestinatarioSelezionato(null);
                         setTipoDestinatari("tutti");
                       }}
                       className="text-slate-400 hover:text-red-600"
@@ -327,10 +891,10 @@ export default function NuovaComunicazione({
                 >
                   <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                     <div className="flex items-center justify-between mb-3">
-                      <div className="font-medium text-slate-800">{selectedAttribute.nome}</div>
+                      <div className="font-medium text-slate-800">{selectedAttribute.nomeattributo}</div>
                       <button
                         onClick={() => {
-                          setAttributoFiltro("");
+                          setAttributoFiltro(null);
                           setValoreFiltro("");
                           setTipoDestinatari("tutti");
                         }}
@@ -344,7 +908,7 @@ export default function NuovaComunicazione({
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Valore
                       </label>
-                      {selectedAttribute.tipo === "boolean" ? (
+                      {selectedAttribute.tipoattributo === 3 ? (
                         <select
                           value={valoreFiltro}
                           onChange={(e) => setValoreFiltro(e.target.value)}
@@ -354,7 +918,7 @@ export default function NuovaComunicazione({
                           <option value="true">Si</option>
                           <option value="false">No</option>
                         </select>
-                      ) : selectedAttribute.tipo === "number" ? (
+                      ) : selectedAttribute.tipoattributo === 2 ? (
                         <input
                           type="number"
                           value={valoreFiltro}
@@ -376,7 +940,7 @@ export default function NuovaComunicazione({
                 </motion.div>
               )}
 
-              {tipoDestinatari === "tutti" && visibleRecipients.length === 0 && (
+              {tipoDestinatari === "tutti" && recipients.length === 0 && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800 text-sm">
                   Nessun destinatario presente. Aggiungi destinatari nella sezione Gestione
                   Destinatari.
@@ -617,8 +1181,8 @@ export default function NuovaComunicazione({
                 <div className="divide-y divide-slate-100">
                   {filteredRecipients.map((recipient) => (
                     <button
-                      key={recipient.id}
-                      onClick={() => handleSelectDestinatario(recipient.id)}
+                      key={recipient.iddestinatario}
+                      onClick={() => handleSelectDestinatario(recipient.iddestinatario)}
                       className="w-full px-6 py-4 hover:bg-indigo-50 transition-colors text-left"
                     >
                       <div className="font-medium text-slate-800">
@@ -677,13 +1241,13 @@ export default function NuovaComunicazione({
                 <div className="space-y-3">
                   {filteredAttributes.map((attribute) => (
                     <button
-                      key={attribute.id}
-                      onClick={() => handleSelectAttributo(attribute.id)}
+                      key={attribute.idattributo}
+                      onClick={() => handleSelectAttributo(attribute.idattributo)}
                       className="w-full p-4 border-2 border-slate-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left"
                     >
-                      <div className="font-medium text-slate-800">{attribute.nome}</div>
+                      <div className="font-medium text-slate-800">{attribute.nomeattributo}</div>
                       <div className="text-sm text-slate-500 mt-1">
-                        Tipo: {attribute.tipo === "text" ? "Testo" : attribute.tipo === "number" ? "Numero" : "Si/No"}
+                        Tipo: {attribute.tipoattributo === 1 ? "Testo" : attribute.tipoattributo === 2 ? "Numero" : "Si/No"}
                       </div>
                     </button>
                   ))}

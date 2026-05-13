@@ -12,6 +12,7 @@ import NuovaComunicazione from "./components/NuovaComunicazione";
 import StoricoComunicazioni from "./components/StoricoComunicazioni";
 import GestioneRuoli from "./components/GestioneRuoli";
 import GestioneFunzioni from "./components/GestioneFunzioni";
+import GestioneWhatsApp from "./components/GestioneWhatsApp";
 
 import RequireFunzione from "../router/RequireFunzione";
 import { AppState } from "../types/app";
@@ -74,6 +75,14 @@ export default function RouterApp() {
               element={
                 <RequireFunzione slug="funzioni">
                   <GestioneFunzioni appState={appState} />
+                </RequireFunzione>
+              }
+            />
+            <Route
+              path="/whatsapp"
+              element={
+                <RequireFunzione slug="funzioni">
+                  <GestioneWhatsApp appState={appState} />
                 </RequireFunzione>
               }
             />

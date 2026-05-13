@@ -8,6 +8,7 @@ import {
   Send,
   History,
   LogOut,
+  MessageCircle,
   Settings,
   Shield,
   BadgeCheck,
@@ -51,6 +52,9 @@ export default function Sidebar() {
 
     ...(hasFunzione("storico")
       ? [{ path: "/storico", icon: History, label: "Storico" }]
+      : []),
+    ...(hasFunzione("funzioni")
+      ? [{ path: "/whatsapp", icon: MessageCircle, label: "Gestione WhatsApp" }]
       : []),
   ];
 

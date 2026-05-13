@@ -8,6 +8,7 @@ export type User = {
 };
 
 export type Role = {
+  codsoc: number;
   // cspell:ignore idrole
   idrole: number;
   slug: string;
