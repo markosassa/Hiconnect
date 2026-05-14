@@ -5,6 +5,11 @@ export type User = {
   codsoc: number;
   nome: string;
   role: Role;
+
+  societa?: {
+    codsoc: number;
+    ragionesociale: string;
+  };
 };
 
 export type Role = {

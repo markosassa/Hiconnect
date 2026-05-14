@@ -13,9 +13,11 @@ import StoricoComunicazioni from "./components/StoricoComunicazioni";
 import GestioneRuoli from "./components/GestioneRuoli";
 import GestioneFunzioni from "./components/GestioneFunzioni";
 import GestioneWhatsApp from "./components/GestioneWhatsApp";
+import MonitoringDashboard from "./components/MonitoringDashboard";
 
 import RequireFunzione from "../router/RequireFunzione";
 import { AppState } from "../types/app";
+import { Monitor } from "lucide-react";
 
 export default function RouterApp() {
   const { user, loading } = useAuth();
@@ -119,6 +121,14 @@ export default function RouterApp() {
               element={
                 <RequireFunzione slug="storico">
                   <StoricoComunicazioni appState={appState} />
+                </RequireFunzione>
+              }
+            />
+            <Route
+              path="/monitoring"
+              element={
+                <RequireFunzione slug="storico">
+                  <MonitoringDashboard appState={appState} />
                 </RequireFunzione>
               }
             />

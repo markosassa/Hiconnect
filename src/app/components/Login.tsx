@@ -99,9 +99,6 @@ export default function Login() {
             Accedi
           </button>
 
-          <p className="text-sm text-slate-500 text-center mt-4">
-            Credenziali default: admin / admin123
-          </p>
         </form>
       </motion.div>
     </div>

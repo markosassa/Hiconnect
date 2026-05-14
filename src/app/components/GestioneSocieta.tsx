@@ -218,6 +218,7 @@ export default function GestioneSocieta() {
                   type="text"
                   placeholder="Ragione sociale"
                   value={formData.ragionesociale}
+                   maxLength={50}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -234,6 +235,7 @@ export default function GestioneSocieta() {
                     type="text"
                     placeholder="Partita IVA"
                     value={formData.piva}
+                    maxLength={11}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
@@ -248,6 +250,7 @@ export default function GestioneSocieta() {
                     type="text"
                     placeholder="Indirizzo"
                     value={formData.indirizzo}
+                    maxLength={100}
                     onChange={(e) =>
                       setFormData({
                         ...formData,

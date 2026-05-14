@@ -56,6 +56,9 @@ export default function Sidebar() {
     ...(hasFunzione("funzioni")
       ? [{ path: "/whatsapp", icon: MessageCircle, label: "Gestione WhatsApp" }]
       : []),
+    ...(hasFunzione("funzioni")
+      ? [{ path: "/monitoring", icon: MessageCircle, label: "Monitor" }]
+      : []),
   ];
 
   return (

@@ -380,7 +380,7 @@ export default function GestioneUtenti() {
                   <tr key={u.user_id} className="border-t">
                     <td className="px-6 py-4">{u.nome ?? "-"}</td>
                     <td className="px-6 py-4">{u.email}</td>
-                    <td className="px-6 py-4">{u.codsoc}</td>
+                    <td className="px-6 py-4">{u.societa?.ragionesociale ?? "-"}</td>
 
                     <td className="px-6 py-4">
                       <div className="flex gap-2">

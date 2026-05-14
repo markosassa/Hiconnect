@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-
+import axios from "axios";
 import Sidebar from "./Sidebar";
+import { Loader2 } from "lucide-react";
 
 import {
   Send,
@@ -17,15 +18,13 @@ import {
   Underline,
   Search,
   X,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 
-import {
-  motion,
-} from "motion/react";
+import { motion } from "framer-motion";
 
 import * as Dialog from "@radix-ui/react-dialog";
-
-import axios from "axios";
 
 import { useAuth } from "../../hooks/useAuth";
 
@@ -35,9 +34,9 @@ import { useAuth } from "../../hooks/useAuth";
 
 type RecipientAttribute = {
   idattributo: number;
-  iddestinatario:number;
+  iddestinatario: number;
   nomeattributo: string;
-  valore: string;
+  valore: string | number | boolean;
 };
 
 type Recipient = {
@@ -47,9 +46,7 @@ type Recipient = {
   cognome: string;
   email: string | null;
   telefono: string | null;
-
-  attributi:
-    RecipientAttribute[];
+  attributi: RecipientAttribute[];
 };
 
 type Attributo = {
@@ -59,500 +56,377 @@ type Attributo = {
   tipoattributo: number;
 };
 
-export default function NuovaComunicazione() {
+type Feedback = {
+  type: "success" | "error";
+  message: string;
+};
 
-  const {
-    user,
-    hasFunzione,
-  } = useAuth();
+export default function NuovaComunicazione() {
+  const { user, hasFunzione } = useAuth();
 
   /**
    * STATES
    */
 
-  const [
-    recipients,
-    setRecipients,
-  ] = useState<
-    Recipient[]
-  >([]);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [attributes, setAttributes] = useState<Attributo[]>([]);
 
-  const [
-    attributes,
-    setAttributes,
-  ] = useState<
-    Attributo[]
-  >([]);
-
-  const [
-    tipoDestinatari,
-    setTipoDestinatari,
-  ] = useState<
-    "tutti" |
-    "singolo" |
-    "attributo"
+  const [tipoDestinatari, setTipoDestinatari] = useState<
+    "tutti" | "singolo" | "attributo"
   >("tutti");
 
-  const [
-    destinatarioSelezionato,
-    setDestinatarioSelezionato,
-  ] = useState<number | null>(
-    null
-  );
+  const [destinatarioSelezionato, setDestinatarioSelezionato] =
+    useState<number | null>(null);
 
-  const [
-    attributoFiltro,
-    setAttributoFiltro,
-  ] = useState<number | null>(
-    null
-  );
+  const [attributoFiltro, setAttributoFiltro] =
+    useState<number | null>(null);
 
-  const [
-    valoreFiltro,
-    setValoreFiltro,
-  ] = useState("");
+  const [valoreFiltro, setValoreFiltro] = useState("");
 
-  const [
-    oggetto,
-    setOggetto,
-  ] = useState("");
+  const [oggetto, setOggetto] = useState("");
+  const [contenuto, setContenuto] = useState("");
 
-  const [
-    contenuto,
-    setContenuto,
-  ] = useState("");
+  const [links, setLinks] = useState<string[]>([]);
+  const [allegati, setAllegati] = useState<File[]>([]);
 
-  const [
-    links,
-    setLinks,
-  ] = useState<string[]>([]);
-
-  const [
-    allegati,
-    setAllegati,
-  ] = useState<File[]>([]);
-
-  const [
-    canaliInvio,
-    setCanaliInvio,
-  ] = useState<
+  const [canaliInvio, setCanaliInvio] = useState<
     ("email" | "whatsapp")[]
   >(["email"]);
 
-  const [
-    showDestinatarioDialog,
-    setShowDestinatarioDialog,
-  ] = useState(false);
+  const [showDestinatarioDialog, setShowDestinatarioDialog] =
+    useState(false);
 
-  const [
-    showAttributoDialog,
-    setShowAttributoDialog,
-  ] = useState(false);
+  const [showAttributoDialog, setShowAttributoDialog] =
+    useState(false);
 
-  const [
-    searchDestinatario,
-    setSearchDestinatario,
-  ] = useState("");
+  const [searchDestinatario, setSearchDestinatario] =
+    useState("");
 
-  const [
-    searchAttributo,
-    setSearchAttributo,
-  ] = useState("");
+  const [searchAttributo, setSearchAttributo] =
+    useState("");
 
-  const [
-    inviato,
-    setInviato,
-  ] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const [feedback, setFeedback] =
+    useState<Feedback | null>(null);
+
+  /**
+   * FEEDBACK AUTO HIDE
+   */
+
+  useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => {
+        setFeedback(null);
+      }, 3000);
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
 
   /**
    * FETCH
    */
 
-  const fetchRecipients =
-    async () => {
+  const fetchRecipients = async () => {
+    try {
+      const res = await axios.get(
+        `/api/recipients/${user?.codsoc}`
+      );
 
-      try {
-
-        const res =
-          await axios.get(
-            `/api/recipients/${user?.codsoc}`,
-            
-          );
-          console.log(res);
-        setRecipients(
-          res.data.data || []
-        );
-
-      } catch (err) {
-
-        console.error(err);
-
-        setRecipients([]);
-      }
-    };
-
-  const fetchAttributes =
-    async () => {
-
-      try {
-
-        const res =
-          await axios.get(
-            "/api/attributes",
-            {
-              params: {
-                codsoc:
-                  user?.codsoc,
-              },
-            }
-          );
-
-        setAttributes(
-          res.data.data || []
-        );
-
-      } catch (err) {
-
-        console.error(err);
-
-        setAttributes([]);
-      }
-    };
-    const handleSelectDestinatario =
-  (
-    recipientId: number
-  ) => {
-
-    setDestinatarioSelezionato(
-      recipientId
-    );
-
-    setTipoDestinatari(
-      "singolo"
-    );
-
-    setShowDestinatarioDialog(
-      false
-    );
-
-    setSearchDestinatario("");
+      setRecipients(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+      setRecipients([]);
+    }
   };
-  const handleSelectAttributo =
-  (
-    attributeId: number
-  ) => {
 
-    setAttributoFiltro(
-      attributeId
-    );
+  const fetchAttributes = async () => {
+    try {
+      const res = await axios.get("/api/attributes", {
+        params: {
+          codsoc: user?.codsoc,
+        },
+      });
 
-    setValoreFiltro("");
-
-    setTipoDestinatari(
-      "attributo"
-    );
-
-    setShowAttributoDialog(
-      false
-    );
-
-    setSearchAttributo("");
+      setAttributes(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+      setAttributes([]);
+    }
   };
+  const handleSelectDestinatario = (
+  recipientId: number
+) => {
+  setDestinatarioSelezionato(
+    recipientId
+  );
+
+  setTipoDestinatari("singolo");
+
+  setShowDestinatarioDialog(false);
+
+  setSearchDestinatario("");
+};
+
+const handleSelectAttributo = (
+  attributeId: number
+) => {
+  setAttributoFiltro(attributeId);
+
+  setValoreFiltro("");
+
+  setTipoDestinatari("attributo");
+
+  setShowAttributoDialog(false);
+
+  setSearchAttributo("");
+};
+
   useEffect(() => {
-
     if (
       user &&
-      hasFunzione(
-        "nuova-comunicazione"
-      )
+      hasFunzione("nuova-comunicazione")
     ) {
-
       fetchRecipients();
       fetchAttributes();
     }
-
   }, [user]);
 
   /**
    * FILTERS
    */
 
-  const filteredRecipients =
-    recipients.filter(
-      (r) =>
+  const filteredRecipients = recipients.filter(
+    (r) =>
+      r.nome
+        .toLowerCase()
+        .includes(
+          searchDestinatario.toLowerCase()
+        ) ||
+      r.cognome
+        .toLowerCase()
+        .includes(
+          searchDestinatario.toLowerCase()
+        ) ||
+      (r.email || "")
+        .toLowerCase()
+        .includes(
+          searchDestinatario.toLowerCase()
+        )
+  );
 
-        r.nome
-          .toLowerCase()
-          .includes(
-            searchDestinatario.toLowerCase()
-          )
-
-        ||
-
-        r.cognome
-          .toLowerCase()
-          .includes(
-            searchDestinatario.toLowerCase()
-          )
-
-        ||
-
-        (r.email || "")
-          .toLowerCase()
-          .includes(
-            searchDestinatario.toLowerCase()
-          )
-    );
-
-  const filteredAttributes =
-    attributes.filter(
-      (a) =>
-
-        a.nomeattributo
-          .toLowerCase()
-          .includes(
-            searchAttributo.toLowerCase()
-          )
-    );
+  const filteredAttributes = attributes.filter(
+    (a) =>
+      a.nomeattributo
+        .toLowerCase()
+        .includes(
+          searchAttributo.toLowerCase()
+        )
+  );
 
   /**
    * SELECTED
    */
 
-  const selectedRecipient =
-    recipients.find(
-      (r) =>
-        r.iddestinatario ===
-        destinatarioSelezionato
-    );
+  const selectedRecipient = recipients.find(
+    (r) =>
+      r.iddestinatario ===
+      destinatarioSelezionato
+  );
 
-  const selectedAttribute =
-    attributes.find(
-      (a) =>
-        a.idattributo ===
-        attributoFiltro
-    );
+  const selectedAttribute = attributes.find(
+    (a) =>
+      a.idattributo === attributoFiltro
+  );
 
   /**
-   * COUNT
+   * HELPERS
    */
 
-  const getDestinatariCount =
-    () => {
+  const normalizeBooleanValue = (
+    value: any
+  ) => {
+    if (
+      value === true ||
+      value === "true" ||
+      value === 1 ||
+      value === "1"
+    ) {
+      return "1";
+    }
 
-      if (
-        tipoDestinatari ===
-        "tutti"
-      ) {
+    return "0";
+  };
 
-        return recipients.length;
-      }
+  const getDestinatariCount = () => {
+    if (tipoDestinatari === "tutti") {
+      return recipients.length;
+    }
 
-      if (
-        tipoDestinatari ===
-        "singolo"
-      ) {
+    if (tipoDestinatari === "singolo") {
+      return destinatarioSelezionato
+        ? 1
+        : 0;
+    }
 
-        return destinatarioSelezionato
-          ? 1
-          : 0;
-      }
+    if (tipoDestinatari === "attributo") {
+      return recipients.filter((r) => {
+        const attr = r.attributi.find(
+          (a) =>
+            a.idattributo ===
+            attributoFiltro
+        );
 
-      if (
-        tipoDestinatari ===
-        "attributo"
-      ) {
+        if (!attr) return false;
 
-        return recipients.filter(
-          (r) => {
+        if (
+          selectedAttribute?.tipoattributo ===
+          3
+        ) {
+          return (
+            normalizeBooleanValue(
+              attr.valore
+            ) === valoreFiltro
+          );
+        }
 
-            const attr =
-              r.attributi.find(
-                (a) =>
-                  a.idattributo ===
-                  attributoFiltro
-              );
+        return (
+          String(attr.valore) ===
+          String(valoreFiltro)
+        );
+      }).length;
+    }
 
-            return (
-              attr?.valore ===
-              valoreFiltro
-            );
-          }
-        ).length;
-      }
-
-      return 0;
-    };
+    return 0;
+  };
 
   /**
    * FORMATTER
    */
 
-  const applyFormatting =
-    (tag: string) => {
+  const applyFormatting = (tag: string) => {
+    const textarea = document.getElementById(
+      "content-editor"
+    ) as HTMLTextAreaElement;
 
-      const textarea =
-        document.getElementById(
-          "content-editor"
-        ) as HTMLTextAreaElement;
+    if (!textarea) return;
 
-      if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
 
-      const start =
-        textarea.selectionStart;
+    const selectedText =
+      contenuto.substring(start, end);
 
-      const end =
-        textarea.selectionEnd;
+    if (!selectedText) return;
 
-      const selectedText =
-        contenuto.substring(
-          start,
-          end
-        );
+    const before = contenuto.substring(
+      0,
+      start
+    );
 
-      if (selectedText) {
+    const after = contenuto.substring(end);
 
-        const before =
-          contenuto.substring(
-            0,
-            start
-          );
-
-        const after =
-          contenuto.substring(
-            end
-          );
-
-        const formatted =
-          `<${tag}>${selectedText}</${tag}>`;
-
-        setContenuto(
-          before +
-          formatted +
-          after
-        );
-      }
-    };
+    setContenuto(
+      before +
+        `<${tag}>${selectedText}</${tag}>` +
+        after
+    );
+  };
 
   /**
    * LINKS
    */
 
-  const addLink =
-    (link: string) => {
+  const addLink = (link: string) => {
+    if (
+      links.length < 3 &&
+      link.trim()
+    ) {
+      setLinks([
+        ...links,
+        link.trim(),
+      ]);
+    }
+  };
 
-      if (
-        links.length < 3 &&
-        link.trim()
-      ) {
-
-        setLinks([
-          ...links,
-          link.trim(),
-        ]);
-      }
-    };
-
-  const removeLink =
-    (index: number) => {
-
-      setLinks(
-        links.filter(
-          (_, i) =>
-            i !== index
-        )
-      );
-    };
+  const removeLink = (index: number) => {
+    setLinks(
+      links.filter((_, i) => i !== index)
+    );
+  };
 
   /**
    * ALLEGATI
    */
 
-  const addAllegato =
-    (file: File) => {
+  const addAllegato = (file: File) => {
+    if (allegati.length < 3) {
+      setAllegati([
+        ...allegati,
+        file,
+      ]);
+    }
+  };
 
-      if (
-        allegati.length < 3
-      ) {
-
-        setAllegati([
-          ...allegati,
-          file,
-        ]);
-      }
-    };
-
-  const removeAllegato =
-    (index: number) => {
-
-      setAllegati(
-        allegati.filter(
-          (_, i) =>
-            i !== index
-        )
-      );
-    };
+  const removeAllegato = (
+    index: number
+  ) => {
+    setAllegati(
+      allegati.filter(
+        (_, i) => i !== index
+      )
+    );
+  };
 
   /**
    * CANALI
    */
 
-  const toggleCanale =
-    (
-      canale:
-        | "email"
-        | "whatsapp"
-    ) => {
-
-      if (
-        canaliInvio.includes(
-          canale
+  const toggleCanale = (
+    canale: "email" | "whatsapp"
+  ) => {
+    if (
+      canaliInvio.includes(canale)
+    ) {
+      setCanaliInvio(
+        canaliInvio.filter(
+          (c) => c !== canale
         )
-      ) {
-
-        setCanaliInvio(
-          canaliInvio.filter(
-            (c) =>
-              c !== canale
-          )
-        );
-
-      } else {
-
-        setCanaliInvio([
-          ...canaliInvio,
-          canale,
-        ]);
-      }
-    };
+      );
+    } else {
+      setCanaliInvio([
+        ...canaliInvio,
+        canale,
+      ]);
+    }
+  };
 
   /**
    * INVIO
    */
 
   const handleInvia = async () => {
-
   try {
+    setLoading(true);
+
+    setFeedback(null);
 
     let destinatari: number[] = [];
 
-    /**
-     * DESTINATARI
-     */
-
     if (tipoDestinatari === "tutti") {
-
-      destinatari =
-        recipients.map(
-          (r) => r.iddestinatario
-        );
+      destinatari = recipients.map(
+        (r) => r.iddestinatario
+      );
     }
 
     if (
       tipoDestinatari === "singolo" &&
       destinatarioSelezionato
     ) {
-
       destinatari = [
         destinatarioSelezionato,
       ];
@@ -561,45 +435,48 @@ export default function NuovaComunicazione() {
     if (
       tipoDestinatari === "attributo"
     ) {
-
-      destinatari =
-        recipients
-          .filter((r) => {
-
-            const attr =
-              r.attributi.find(
-                (a) =>
-                  a.idattributo ===
-                  attributoFiltro
-              );
-
-            return (
-              attr?.valore ===
-              valoreFiltro
+      destinatari = recipients
+        .filter((r) => {
+          const attr =
+            r.attributi.find(
+              (a) =>
+                a.idattributo ===
+                attributoFiltro
             );
-          })
-          .map(
-            (r) =>
-              r.iddestinatario
+
+          if (!attr) return false;
+
+          if (
+            selectedAttribute?.tipoattributo ===
+            3
+          ) {
+            return (
+              normalizeBooleanValue(
+                attr.valore
+              ) === valoreFiltro
+            );
+          }
+
+          return (
+            String(attr.valore) ===
+            String(valoreFiltro)
           );
+        })
+        .map(
+          (r) =>
+            r.iddestinatario
+        );
     }
 
-    /**
-     * VALIDAZIONE
-     */
-
     if (destinatari.length === 0) {
-
-      alert(
-        "Nessun destinatario selezionato"
-      );
+      setFeedback({
+        type: "error",
+        message:
+          "Nessun destinatario selezionato",
+      });
 
       return;
     }
-
-    /**
-     * FORM DATA
-     */
 
     const formData =
       new FormData();
@@ -619,36 +496,27 @@ export default function NuovaComunicazione() {
       contenuto
     );
 
-    /**
-     * TIPO DESTINATARI
-     */
-
     formData.append(
       "tipoDestinatari",
       tipoDestinatari
     );
 
-    /**
-     * DESTINATARI
-     */
-
     destinatari.forEach(
-      (iddestinatario, index) => {
-
+      (
+        iddestinatario,
+        index
+      ) => {
         formData.append(
           `destinatari[${index}]`,
-          String(iddestinatario)
+          String(
+            iddestinatario
+          )
         );
       }
     );
 
-    /**
-     * LINKS
-     */
-
     links.forEach(
       (link, index) => {
-
         formData.append(
           `links[${index}]`,
           link
@@ -656,13 +524,8 @@ export default function NuovaComunicazione() {
       }
     );
 
-    /**
-     * CANALI
-     */
-
     canaliInvio.forEach(
       (canale, index) => {
-
         formData.append(
           `canali[${index}]`,
           canale
@@ -670,23 +533,14 @@ export default function NuovaComunicazione() {
       }
     );
 
-    /**
-     * ALLEGATI
-     */
-
     allegati.forEach(
       (file, index) => {
-
         formData.append(
           `allegati[${index}]`,
           file
         );
       }
     );
-
-    /**
-     * API
-     */
 
     await axios.post(
       "/api/comunicazioni",
@@ -699,11 +553,11 @@ export default function NuovaComunicazione() {
       }
     );
 
-    /**
-     * SUCCESS
-     */
-
-    setInviato(true);
+    setFeedback({
+      type: "success",
+      message:
+        "Comunicazione inviata con successo",
+    });
 
     /**
      * RESET
@@ -721,29 +575,29 @@ export default function NuovaComunicazione() {
 
     setAttributoFiltro(null);
 
-    setDestinatarioSelezionato(null);
-
-    setTipoDestinatari(
-      "tutti"
+    setDestinatarioSelezionato(
+      null
     );
 
-    setCanaliInvio([
-      "email",
-    ]);
+    setTipoDestinatari("tutti");
 
-  } catch (err) {
+    setCanaliInvio(["email"]);
 
+  } catch (err: any) {
     console.error(err);
 
+    setFeedback({
+      type: "error",
+      message:
+        err?.response?.data
+          ?.message ||
+        "Errore durante l'invio",
+    });
   } finally {
-
-    setTimeout(() => {
-
-      setInviato(false);
-
-    }, 2000);
+    setLoading(false);
   }
 };
+
   /**
    * VALIDATION
    */
@@ -763,7 +617,6 @@ export default function NuovaComunicazione() {
       "nuova-comunicazione"
     )
   ) {
-
     return (
       <div className="p-6 text-red-600">
         Accesso negato
@@ -773,13 +626,58 @@ export default function NuovaComunicazione() {
 
   return (
     <div className="flex">
-      <Sidebar  />
+      <Sidebar />
+
       <div className="flex-1 bg-slate-50 p-8">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
             <Send className="w-8 h-8 text-indigo-600" />
-            <h1 className="text-3xl font-semibold text-slate-800">Nuova Comunicazione</h1>
+
+            <h1 className="text-3xl font-semibold text-slate-800">
+              Nuova Comunicazione
+            </h1>
           </div>
+
+          {feedback && (
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: -20,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.3,
+              }}
+              className={`
+                mb-6
+                rounded-xl
+                border
+                px-5
+                py-4
+                text-sm
+                font-medium
+                shadow-sm
+                ${
+                  feedback.type === "success"
+                    ? "border-green-200 bg-green-50 text-green-700"
+                    : "border-red-200 bg-red-50 text-red-700"
+                }
+              `}
+            >
+              <div className="flex items-center gap-3">
+                {feedback.type === "success" ? (
+                  <CheckCircle className="w-5 h-5 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                )}
+
+                <span>{feedback.message}</span>
+              </div>
+            </motion.div>
+          )}
 
           <div className="space-y-6">
             {/* Canali di Invio */}
@@ -915,8 +813,8 @@ export default function NuovaComunicazione() {
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                           <option value="">Seleziona</option>
-                          <option value="true">Si</option>
-                          <option value="false">No</option>
+                          <option value="1">Si</option>
+                          <option value="0">No</option>
                         </select>
                       ) : selectedAttribute.tipoattributo === 2 ? (
                         <input
@@ -1121,24 +1019,33 @@ export default function NuovaComunicazione() {
             <div className="flex justify-end">
               <button
                 onClick={handleInvia}
-                disabled={!isValid}
-                className="flex items-center gap-2 bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                disabled={!isValid || loading}
+                className="
+                  flex items-center justify-center gap-3
+                  min-w-[260px]
+                  bg-indigo-600
+                  text-white
+                  px-8
+                  py-3
+                  rounded-lg
+                  hover:bg-indigo-700
+                  transition-all
+                  disabled:opacity-50
+                  disabled:cursor-not-allowed
+                  shadow-lg
+                "
               >
-                {inviato ? (
+                {loading ? (
                   <>
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center"
-                    >
-                      ✓
-                    </motion.div>
-                    Inviato!
+                    <Loader2 className="w-5 h-5 animate-spin" />
+
+                    <span>Invio comunicazione...</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-5 h-5" />
-                    Invia Comunicazione
+
+                    <span>Invia Comunicazione</span>
                   </>
                 )}
               </button>
