@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Sidebar from "./Sidebar";
+import PageLayout from "./PageLayout";
 import { Building2, Plus, Edit2, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import axios from "axios";
@@ -128,7 +128,7 @@ export default function GestioneSocieta() {
       await axios.delete(`/api/companies/${codsoc}`);
 
       setCompanies(prev =>
-        prev.filter(c => c.codsoc !== codsoc)
+        prev.filter(c => parseInt(c.codsoc) !== codsoc)
       );
 
       setAlert({
@@ -164,10 +164,8 @@ export default function GestioneSocieta() {
   }
 
   return (
-    <div className="flex">
-      <Sidebar />
-
-      <div className="flex-1 bg-slate-50 p-8">
+    <PageLayout>
+      <div className="bg-slate-50 p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
 
           <div className="flex items-center justify-between mb-6">
@@ -288,73 +286,75 @@ export default function GestioneSocieta() {
                 Nessuna società presente
               </div>
             ) : (
-              <table className="w-full">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left">
-                      Ragione Sociale
-                    </th>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-full table-auto">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left">
+                        Ragione Sociale
+                      </th>
 
-                    <th className="px-6 py-3 text-left">
-                      Partita IVA
-                    </th>
+                      <th className="px-6 py-3 text-left">
+                        Partita IVA
+                      </th>
 
-                    <th className="px-6 py-3 text-left">
-                      Indirizzo
-                    </th>
+                      <th className="px-6 py-3 text-left">
+                        Indirizzo
+                      </th>
 
-                    <th className="px-6 py-3 text-left">
-                      Azioni
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {companies.map((company) => (
-                    <tr
-                      key={company.codsoc}
-                      className="border-t"
-                    >
-                      <td className="px-6 py-4">
-                        {company.ragionesociale}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        {company.piva}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        {company.indirizzo}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-
-                          <button
-                            onClick={() => handleEdit(company)}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              handleDelete(company.codsoc)
-                            }
-                          >
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </button>
-
-                        </div>
-                      </td>
+                      <th className="px-6 py-3 text-left">
+                        Azioni
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+
+                  <tbody>
+                    {companies.map((company) => (
+                      <tr
+                        key={company.codsoc}
+                        className="border-t"
+                      >
+                        <td className="px-6 py-4">
+                          {company.ragionesociale}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {company.piva}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {company.indirizzo}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+
+                            <button
+                              onClick={() => handleEdit(company)}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                handleDelete(parseInt(company.codsoc))
+                              }
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </button>
+
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+            </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

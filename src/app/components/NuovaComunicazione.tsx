@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import Sidebar from "./Sidebar";
+import PageLayout from "./PageLayout";
 import { Loader2 } from "lucide-react";
 
 import {
@@ -625,10 +625,8 @@ const handleSelectAttributo = (
   }
 
   return (
-    <div className="flex">
-      <Sidebar />
-
-      <div className="flex-1 bg-slate-50 p-8">
+    <PageLayout>
+      <div className="bg-slate-50 p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
             <Send className="w-8 h-8 text-indigo-600" />
@@ -1172,6 +1170,7 @@ const handleSelectAttributo = (
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-    </div>
+    
+    </PageLayout>
   );
 }

@@ -53,20 +53,23 @@ export default function Sidebar() {
     ...(hasFunzione("storico")
       ? [{ path: "/storico", icon: History, label: "Storico" }]
       : []),
-    ...(hasFunzione("funzioni")
+    ...(hasFunzione("whatsapp-admin")
       ? [{ path: "/whatsapp", icon: MessageCircle, label: "Gestione WhatsApp" }]
       : []),
-    ...(hasFunzione("funzioni")
-      ? [{ path: "/monitoring", icon: MessageCircle, label: "Monitor" }]
+    ...(hasFunzione("gestione-parametri")
+      ? [{ path: "/parametri", icon: Settings, label: "Parametri" }]
+      : []),
+    ...(hasFunzione("monitor")
+      ? [{ path: "/monitoring", icon: Settings, label: "Monitor" }]
       : []),
   ];
 
   return (
-    <div className="w-64 bg-emerald-900 min-h-screen flex flex-col">
+    <div className="w-full md:w-64 bg-emerald-900 min-h-screen flex flex-col">
 
-  <div className="p-6 border-b border-emerald-700">
+      <div className="p-6 border-b border-emerald-700">
 
-    <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
 
       <img
         src="/logo2.png"

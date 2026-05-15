@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Sidebar from "./Sidebar";
+import PageLayout from "./PageLayout";
 import { Users, Plus, Edit2, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import axios from "axios";
@@ -235,10 +235,8 @@ export default function GestioneUtenti() {
   }
 
   return (
-    <div className="flex">
-      <Sidebar />
-
-      <div className="flex-1 bg-slate-50 p-8">
+    <PageLayout>
+      <div className="bg-slate-50 p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
 
           {/* HEADER */}
@@ -364,15 +362,16 @@ export default function GestioneUtenti() {
 
           {/* TABLE */}
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-6 py-3 text-left">Nome</th>
-                  <th className="px-6 py-3 text-left">Email</th>
-                  <th className="px-6 py-3 text-left">Società</th>
-                  <th className="px-6 py-3 text-left">Azioni</th>
-                </tr>
-              </thead>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-full table-auto">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left">Nome</th>
+                    <th className="px-6 py-3 text-left">Email</th>
+                    <th className="px-6 py-3 text-left">Società</th>
+                    <th className="px-6 py-3 text-left">Azioni</th>
+                  </tr>
+                </thead>
 
               <tbody>
                 {users.map((u) => (
@@ -405,6 +404,7 @@ export default function GestioneUtenti() {
 
         </div>
       </div>
-    </div>
+      </div>
+    </PageLayout>
   );
 }

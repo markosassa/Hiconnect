@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Sidebar from "./Sidebar";
+import PageLayout from "./PageLayout";
 import {
   MessageCircle,
   QrCode,
@@ -284,11 +284,8 @@ export default function GestioneWhatsapp() {
   };
 
   return (
-    <div className="flex">
-
-      <Sidebar />
-
-      <div className="flex-1 bg-slate-50 p-8">
+    <PageLayout>
+      <div className="bg-slate-50 p-4 md:p-8">
 
         <div className="max-w-5xl mx-auto">
 
@@ -498,6 +495,6 @@ export default function GestioneWhatsapp() {
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

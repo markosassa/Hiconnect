@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Sidebar from "./Sidebar";
+import PageLayout from "./PageLayout";
 import {
   Tags,
   Plus,
@@ -298,12 +298,8 @@ export default function GestioneAttributi() {
   }
 
   return (
-    <div className="flex">
-
-      <Sidebar />
-
-      <div className="flex-1 bg-slate-50 p-8">
-
+    <PageLayout>
+      <div className="bg-slate-50 p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
 
           {/* HEADER */}
@@ -453,7 +449,8 @@ export default function GestioneAttributi() {
 
             ) : (
 
-              <table className="w-full">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-full table-auto">
 
                 <thead className="bg-slate-50">
 
@@ -529,10 +526,11 @@ export default function GestioneAttributi() {
                   )}
                 </tbody>
               </table>
+            </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

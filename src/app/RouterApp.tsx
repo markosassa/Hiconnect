@@ -14,6 +14,7 @@ import GestioneRuoli from "./components/GestioneRuoli";
 import GestioneFunzioni from "./components/GestioneFunzioni";
 import GestioneWhatsApp from "./components/GestioneWhatsApp";
 import MonitoringDashboard from "./components/MonitoringDashboard";
+import GestioneParametri from "./components/GestioneParametri";
 
 import RequireFunzione from "../router/RequireFunzione";
 import { AppState } from "../types/app";
@@ -49,8 +50,8 @@ export default function RouterApp() {
               element={
                 <RequireFunzione slug="users">
                   <GestioneUtenti
-                    appState={appState}
-                    setAppState={setAppState}
+                    
+                    
                   />
                 </RequireFunzione>
               }
@@ -60,7 +61,7 @@ export default function RouterApp() {
               path="/societa"
               element={
                 <RequireFunzione slug="societa">
-                  <GestioneSocieta appState={appState} />
+                  <GestioneSocieta  />
                 </RequireFunzione>
               }
             />
@@ -68,7 +69,7 @@ export default function RouterApp() {
               path="/ruoli"
               element={
                 <RequireFunzione slug="ruoli">
-                  <GestioneRuoli appState={appState} />
+                  <GestioneRuoli  />
                 </RequireFunzione>
               }
             />
@@ -76,7 +77,7 @@ export default function RouterApp() {
               path="/funzioni"
               element={
                 <RequireFunzione slug="funzioni">
-                  <GestioneFunzioni appState={appState} />
+                  <GestioneFunzioni  />
                 </RequireFunzione>
               }
             />
@@ -84,7 +85,7 @@ export default function RouterApp() {
               path="/whatsapp"
               element={
                 <RequireFunzione slug="funzioni">
-                  <GestioneWhatsApp appState={appState} />
+                  <GestioneWhatsApp  />
                 </RequireFunzione>
               }
             />
@@ -93,7 +94,7 @@ export default function RouterApp() {
               path="/destinatari"
               element={
                 <RequireFunzione slug="destinatari">
-                  <GestioneDestinatari appState={appState} />
+                  <GestioneDestinatari  />
                 </RequireFunzione>
               }
             />
@@ -102,7 +103,7 @@ export default function RouterApp() {
               path="/attributi"
               element={
                 <RequireFunzione slug="attributi">
-                  <GestioneAttributi appState={appState} />
+                  <GestioneAttributi  />
                 </RequireFunzione>
               }
             />
@@ -111,7 +112,7 @@ export default function RouterApp() {
               path="/nuova-comunicazione"
               element={
                 <RequireFunzione slug="nuova-comunicazione">
-                  <NuovaComunicazione appState={appState} />
+                  <NuovaComunicazione  />
                 </RequireFunzione>
               }
             />
@@ -120,15 +121,23 @@ export default function RouterApp() {
               path="/storico"
               element={
                 <RequireFunzione slug="storico">
-                  <StoricoComunicazioni appState={appState} />
+                  <StoricoComunicazioni  />
                 </RequireFunzione>
               }
             />
             <Route
               path="/monitoring"
               element={
-                <RequireFunzione slug="storico">
-                  <MonitoringDashboard appState={appState} />
+                <RequireFunzione slug="monitor">
+                  <MonitoringDashboard  />
+                </RequireFunzione>
+              }
+            />
+            <Route
+              path="/parametri"
+              element={
+                <RequireFunzione slug="gestione-parametri">
+                  <GestioneParametri  />
                 </RequireFunzione>
               }
             />

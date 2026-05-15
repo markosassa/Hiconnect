@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Sidebar from "./Sidebar";
+import PageLayout from "./PageLayout";
 import {
   Shield,
   Plus,
@@ -320,266 +320,274 @@ export default function GestioneRuoli() {
   }
 
   return (
-    <div className="flex">
+    <PageLayout>
+    
 
-      <Sidebar />
+      
 
-      <div className="flex-1 bg-slate-50 p-8">
+      <div className="bg-slate-50 p-4 md:p-8">
 
-        <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto">
 
-          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6">
 
-            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
 
-              <Shield className="w-8 h-8 text-emerald-600" />
+                <Shield className="w-8 h-8 text-emerald-600" />
 
-              <h1 className="text-3xl font-semibold text-slate-800">
-                Gestione Ruoli
-              </h1>
-            </div>
-
-            <button
-              onClick={() =>
-                setShowForm(!showForm)
-              }
-              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg"
-            >
-              <Plus className="w-5 h-5" />
-              Nuovo Ruolo
-            </button>
-          </div>
-
-          {alert && (
-            <div
-              className={`mb-4 rounded-lg px-4 py-3 text-sm font-medium ${
-                alert.type === "success"
-                  ? "bg-green-100 text-green-700 border border-green-300"
-                  : "bg-red-100 text-red-700 border border-red-300"
-              }`}
-            >
-              {alert.message}
-            </div>
-          )}
-
-          {showForm && (
-
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-md p-6 mb-6"
-            >
-
-              <h2 className="text-xl font-medium mb-4">
-                {editingRole
-                  ? "Modifica Ruolo"
-                  : "Nuovo Ruolo"}
-              </h2>
-
-              <form
-                onSubmit={handleSubmit}
-                className="space-y-4"
-              >
-
-                <select
-                  value={formData.codsoc}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      codsoc: e.target.value,
-                    })
-                  }
-                  className="w-full border p-2 rounded"
-                  required
-                >
-                  <option value="">
-                    Seleziona società
-                  </option>
-
-                  {companies.map((c) => (
-                    <option
-                      key={c.codsoc}
-                      value={c.codsoc}
-                    >
-                      {c.ragionesociale}
-                    </option>
-                  ))}
-                </select>
-
-                <input
-                  type="text"
-                  placeholder="Nome ruolo"
-                  value={formData.namerole}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      namerole: e.target.value,
-                    })
-                  }
-                  className="w-full border p-2 rounded"
-                  required
-                />
-
-                <input
-                  type="text"
-                  placeholder="Slug"
-                  value={formData.slug}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      slug: e.target.value,
-                    })
-                  }
-                  className="w-full border p-2 rounded"
-                  required
-                />
-
-                <div>
-
-                  <h3 className="text-sm font-medium text-slate-700 mb-3">
-                    Funzioni associate
-                  </h3>
-
-                  <div className="grid grid-cols-2 gap-2 border rounded-lg p-4">
-
-                    {funzioni.map((f) => (
-
-                      <label
-                        key={f.idfunzione}
-                        className="flex items-center gap-2"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.funzioni.includes(
-                            f.idfunzione
-                          )}
-                          onChange={() =>
-                            handleFunzioneChange(
-                              f.idfunzione
-                            )
-                          }
-                        />
-
-                        <span>
-                          {f.slug}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-
-                  <button
-                    className="bg-emerald-600 text-white px-6 py-2 rounded-lg"
-                  >
-                    {editingRole
-                      ? "Salva Modifiche"
-                      : "Crea Ruolo"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="bg-slate-200 px-6 py-2 rounded-lg"
-                  >
-                    Annulla
-                  </button>
-
-                </div>
-              </form>
-            </motion.div>
-          )}
-
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-
-            {roles.length === 0 ? (
-
-              <div className="p-8 text-center text-slate-500">
-                Nessun ruolo presente
+                <h1 className="text-3xl font-semibold text-slate-800">
+                  Gestione Ruoli
+                </h1>
               </div>
 
-            ) : (
+              <button
+                onClick={() =>
+                  setShowForm(!showForm)
+                }
+                className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg"
+              >
+                <Plus className="w-5 h-5" />
+                Nuovo Ruolo
+              </button>
+            </div>
 
-              <table className="w-full">
+            {alert && (
+              <div
+                className={`mb-4 rounded-lg px-4 py-3 text-sm font-medium ${
+                  alert.type === "success"
+                    ? "bg-green-100 text-green-700 border border-green-300"
+                    : "bg-red-100 text-red-700 border border-red-300"
+                }`}
+              >
+                {alert.message}
+              </div>
+            )}
 
-                <thead className="bg-slate-50">
-                  <tr>
+            {showForm && (
 
-                    <th className="px-6 py-3 text-left">
-                      Società
-                    </th>
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl shadow-md p-6 mb-6"
+              >
 
-                    <th className="px-6 py-3 text-left">
-                      Nome Ruolo
-                    </th>
+                <h2 className="text-xl font-medium mb-4">
+                  {editingRole
+                    ? "Modifica Ruolo"
+                    : "Nuovo Ruolo"}
+                </h2>
 
-                    <th className="px-6 py-3 text-left">
-                      Slug
-                    </th>
+                <form
+                  onSubmit={handleSubmit}
+                  className="space-y-4"
+                >
 
-                    <th className="px-6 py-3 text-left">
-                      Azioni
-                    </th>
+                  <select
+                    value={formData.codsoc}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        codsoc: e.target.value,
+                      })
+                    }
+                    className="w-full border p-2 rounded"
+                    required
+                  >
+                    <option value="">
+                      Seleziona società
+                    </option>
 
-                  </tr>
-                </thead>
+                    {companies.map((c) => (
+                      <option
+                        key={c.codsoc}
+                        value={c.codsoc}
+                      >
+                        {c.ragionesociale}
+                      </option>
+                    ))}
+                  </select>
 
-                <tbody>
+                  <input
+                    type="text"
+                    placeholder="Nome ruolo"
+                    value={formData.namerole}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        namerole: e.target.value,
+                      })
+                    }
+                    className="w-full border p-2 rounded"
+                    required
+                  />
 
-                  {roles.map((role) => (
+                  <input
+                    type="text"
+                    placeholder="Slug"
+                    value={formData.slug}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        slug: e.target.value,
+                      })
+                    }
+                    className="w-full border p-2 rounded"
+                    required
+                  />
 
-                    <tr
-                      key={`${role.codsoc}-${role.idrole}`}
-                      className="border-t"
-                    >
+                  <div>
 
-                      <td className="px-6 py-4">
-                        {role.codsoc}
-                      </td>
+                    <h3 className="text-sm font-medium text-slate-700 mb-3">
+                      Funzioni associate
+                    </h3>
 
-                      <td className="px-6 py-4">
-                        {role.namerole}
-                      </td>
+                    <div className="grid grid-cols-2 gap-2 border rounded-lg p-4">
 
-                      <td className="px-6 py-4">
-                        {role.slug}
-                      </td>
+                      {funzioni.map((f) => (
 
-                      <td className="px-6 py-4">
-
-                        <div className="flex gap-2">
-
-                          <button
-                            onClick={() =>
-                              handleEdit(role)
-                            }
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              handleDelete(
-                                role.codsoc,
-                                role.idrole
+                        <label
+                          key={f.idfunzione}
+                          className="flex items-center gap-2"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.funzioni.includes(
+                              f.idfunzione
+                            )}
+                            onChange={() =>
+                              handleFunzioneChange(
+                                f.idfunzione
                               )
                             }
-                          >
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </button>
+                          />
 
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          <span>
+                            {f.slug}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+
+                    <button
+                      className="bg-emerald-600 text-white px-6 py-2 rounded-lg"
+                    >
+                      {editingRole
+                        ? "Salva Modifiche"
+                        : "Crea Ruolo"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      className="bg-slate-200 px-6 py-2 rounded-lg"
+                    >
+                      Annulla
+                    </button>
+
+                  </div>
+                </form>
+              </motion.div>
             )}
+
+
+              
+
           </div>
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+
+              {
+              roles.length === 0 ? (
+
+                  <div className="p-8 text-center text-slate-500">
+                    Nessun ruolo presente
+                  </div>
+
+                ) : (
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-full table-auto">
+
+                      <thead className="bg-slate-50">
+                        <tr>
+
+                          <th className="px-6 py-3 text-left">
+                            Società
+                          </th>
+
+                          <th className="px-6 py-3 text-left">
+                            Nome Ruolo
+                          </th>
+
+                          <th className="px-6 py-3 text-left">
+                            Slug
+                          </th>
+
+                          <th className="px-6 py-3 text-left">
+                            Azioni
+                          </th>
+
+                        </tr>
+                      </thead>
+
+                      <tbody>
+
+                        {roles.map((role) => (
+
+                          <tr
+                            key={`${role.codsoc}-${role.idrole}`}
+                            className="border-t"
+                          >
+
+                            <td className="px-6 py-4">
+                              {role.codsoc}
+                            </td>
+
+                            <td className="px-6 py-4">
+                              {role.namerole}
+                            </td>
+
+                            <td className="px-6 py-4">
+                              {role.slug}
+                            </td>
+
+                            <td className="px-6 py-4">
+
+                              <div className="flex gap-2">
+
+                                <button
+                                  onClick={() =>
+                                    handleEdit(role)
+                                  }
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    handleDelete(
+                                      role.codsoc,
+                                      role.idrole
+                                    )
+                                  }
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-600" />
+                                </button>
+
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    </div>
+                )
+              }
         </div>
-      </div>
-    </div>
+        </div>
+    </PageLayout>
   );
 }
 

@@ -28,8 +28,8 @@ export type Funzione = {
 };
 
 export type Company = {
-  id: string;
-  nome: string;
-  pIva: string;
+  codsoc: string;
+  ragionesociale: string;
+  piva: string;
   indirizzo: string;
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Sidebar from "./Sidebar";
+import PageLayout from "./PageLayout";
 import {
   Blocks,
   Plus,
@@ -247,11 +247,8 @@ export default function GestioneFunzioni() {
   }
 
   return (
-    <div className="flex">
-
-      <Sidebar />
-
-      <div className="flex-1 bg-slate-50 p-8">
+    <PageLayout>
+      <div className="bg-slate-50 p-4 md:p-8">
 
         <div className="max-w-6xl mx-auto">
 
@@ -365,95 +362,97 @@ export default function GestioneFunzioni() {
 
             ) : (
 
-              <table className="w-full">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-full table-auto">
 
-                <thead className="bg-slate-50">
-                  <tr>
+                  <thead className="bg-slate-50">
+                    <tr>
 
-                    <th className="px-6 py-3 text-left">
-                      ID
-                    </th>
+                      <th className="px-6 py-3 text-left">
+                        ID
+                      </th>
 
-                    <th className="px-6 py-3 text-left">
-                      Slug
-                    </th>
+                      <th className="px-6 py-3 text-left">
+                        Slug
+                      </th>
 
-                    <th className="px-6 py-3 text-left">
-                      Azioni
-                    </th>
+                      <th className="px-6 py-3 text-left">
+                        Azioni
+                      </th>
 
-                  </tr>
-                </thead>
+                    </tr>
+                  </thead>
 
-                <tbody>
+                  <tbody>
 
-                  {funzioni.map((funzione) => {
+                    {funzioni.map((funzione) => {
 
-                    const isProtected =
-                      PROTECTED_FUNCTIONS.includes(
-                        funzione.idfunzione
+                      const isProtected =
+                        PROTECTED_FUNCTIONS.includes(
+                          funzione.idfunzione
+                        );
+
+                      return (
+
+                        <tr
+                          key={funzione.idfunzione}
+                          className="border-t"
+                        >
+
+                          <td className="px-6 py-4">
+                            {funzione.idfunzione}
+                          </td>
+
+                          <td className="px-6 py-4">
+                            {funzione.slug}
+                          </td>
+
+                          <td className="px-6 py-4">
+
+                            <div className="flex gap-2">
+
+                              <button
+                                onClick={() =>
+                                  handleEdit(funzione)
+                                }
+                                disabled={isProtected}
+                                className={
+                                  isProtected
+                                    ? "opacity-40 cursor-not-allowed"
+                                    : ""
+                                }
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+
+                              <button
+                                onClick={() =>
+                                  handleDelete(
+                                    funzione.idfunzione
+                                  )
+                                }
+                                disabled={isProtected}
+                                className={
+                                  isProtected
+                                    ? "opacity-40 cursor-not-allowed"
+                                    : ""
+                                }
+                              >
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </button>
+
+                            </div>
+                          </td>
+                        </tr>
                       );
-
-                    return (
-
-                      <tr
-                        key={funzione.idfunzione}
-                        className="border-t"
-                      >
-
-                        <td className="px-6 py-4">
-                          {funzione.idfunzione}
-                        </td>
-
-                        <td className="px-6 py-4">
-                          {funzione.slug}
-                        </td>
-
-                        <td className="px-6 py-4">
-
-                          <div className="flex gap-2">
-
-                            <button
-                              onClick={() =>
-                                handleEdit(funzione)
-                              }
-                              disabled={isProtected}
-                              className={
-                                isProtected
-                                  ? "opacity-40 cursor-not-allowed"
-                                  : ""
-                              }
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-
-                            <button
-                              onClick={() =>
-                                handleDelete(
-                                  funzione.idfunzione
-                                )
-                              }
-                              disabled={isProtected}
-                              className={
-                                isProtected
-                                  ? "opacity-40 cursor-not-allowed"
-                                  : ""
-                              }
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </button>
-
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
+                    })}
+                  </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

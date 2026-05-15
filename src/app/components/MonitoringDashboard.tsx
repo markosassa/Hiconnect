@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import Sidebar from "./Sidebar";
+import PageLayout from "./PageLayout";
 
 import {
   Activity,
@@ -162,11 +162,8 @@ export default function MonitoringDashboard() {
   };
 
   return (
-    <div className="flex">
-
-      <Sidebar />
-
-      <div className="p-8 flex-1 bg-slate-50 min-h-screen">
+    <PageLayout>
+      <div className="bg-slate-50 p-4 md:p-8">
 
         <h1 className="text-3xl font-bold mb-8">
           Monitoring Dashboard
@@ -491,7 +488,7 @@ export default function MonitoringDashboard() {
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

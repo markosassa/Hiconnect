@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import Sidebar from "./Sidebar";
+import PageLayout from "./PageLayout";
 import {
   History, Calendar, Users, Mail,
   MessageCircle, Link2, Paperclip, ChevronDown, ChevronUp, Filter, X,
@@ -369,10 +369,8 @@ export default function StoricoComunicazioni() {
   }
 
   return (
-    <div className="flex">
-      <Sidebar />
-
-      <div className="flex-1 bg-slate-50 p-8">
+    <PageLayout>
+      <div className="bg-slate-50 p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
 
           {/* HEADER */}
@@ -425,16 +423,17 @@ export default function StoricoComunicazioni() {
           /* TABELLA */
           ) : (
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Data</th>
-                    <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Messaggio</th>
-                    <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Destinatari</th>
-                    <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Canali</th>
-                    <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Stato</th>
-                    <th className="px-4 py-3 w-10" />
-                  </tr>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left min-w-full table-auto">
+                  <thead className="bg-slate-50">
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Data</th>
+                      <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Messaggio</th>
+                      <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Destinatari</th>
+                      <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Canali</th>
+                      <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Stato</th>
+                      <th className="px-4 py-3 w-10" />
+                    </tr>
                 </thead>
                 <tbody>
                   {comunicazioniFiltrate.map((comm) => (
@@ -446,9 +445,10 @@ export default function StoricoComunicazioni() {
                 </tbody>
               </table>
             </div>
+            </div>
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

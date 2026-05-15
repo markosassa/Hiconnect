@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import Sidebar from "./Sidebar";
+import PhoneInput from "react-phone-input-2";
+
+import "react-phone-input-2/lib/style.css";
 import {
   UserCheck,
   Plus,
@@ -9,6 +11,11 @@ import {
 import { motion } from "motion/react";
 import axios from "axios";
 
+import {
+  parsePhoneNumberFromString,
+} from "libphonenumber-js";
+
+import PageLayout from "./PageLayout";
 import { useAuth } from "../../hooks/useAuth";
 
 type Attributo = {
@@ -50,7 +57,7 @@ export default function GestioneDestinatari() {
     user,
     hasFunzione,
   } = useAuth();
-
+  
   const [recipients, setRecipients] =
     useState<Recipient[]>([]);
 
@@ -76,11 +83,23 @@ export default function GestioneDestinatari() {
       email: "",
       telefono: "",
       codsoc:
-        user?.codsoc || 0,
-
+      user?.codsoc || 0,
       attributi:
         [] as RecipientAttribute[],
     });
+  const validatePhoneNumber = (telefono: string) => {
+
+    if (!telefono.trim()) {
+      return true;
+    }
+
+    const parsed =
+      parsePhoneNumberFromString(
+        `+${telefono}`
+      );
+
+    return parsed?.isValid() || false;
+  };
 
   const getErrorMessage = (
     err: unknown
@@ -236,34 +255,45 @@ export default function GestioneDestinatari() {
     return attr?.valore || "";
   };
 
-  const handleSubmit = async (
-    e: React.FormEvent
-  ) => {
-
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
 
-      if (
-        editingRecipient
-      ) {
+      if ( formData.telefono && !validatePhoneNumber(formData.telefono)) {
 
-        await axios.patch(
-          `/api/recipients/${editingRecipient.codsoc}/${editingRecipient.iddestinatario}`,
-          formData
+          setAlert({
+            type: "error",
+            message:
+              "Numero di telefono non valido",
+          });
+
+        return;
+      }
+      if (editingRecipient) {
+        await axios.patch(`/api/recipients/${editingRecipient.codsoc}/${editingRecipient.iddestinatario}`,
+          {
+            ...formData,
+            telefono: formData.telefono
+            ? `+${formData.telefono}`
+            : "",
+          }
         );
 
       } else {
-
-        await axios.post(
-          "/api/recipients",
-          formData
+        await axios.post("/api/recipients",
+          {
+          ...formData,
+          telefono: formData.telefono
+            ? `+${formData.telefono}`
+            : "",
+          
+          }
         );
       }
 
       setAlert({
         type: "success",
-
         message:
           editingRecipient
             ? "Destinatario modificato correttamente"
@@ -271,11 +301,8 @@ export default function GestioneDestinatari() {
       });
 
       await fetchRecipients();
-
       resetForm();
-
     } catch (err) {
-
       setAlert({
         type: "error",
         message:
@@ -284,30 +311,26 @@ export default function GestioneDestinatari() {
     }
   };
 
-  const handleEdit = (
-    recipient: Recipient
-  ) => {
+  const handleEdit = (recipient: Recipient) => {
 
     setEditingRecipient(
       recipient
     );
-
+    const numero =
+      recipient.telefono.replace(
+        "+",
+        ""
+      );
     setFormData({
       nome:
         recipient.nome || "",
-
       cognome:
         recipient.cognome || "",
-
       email:
         recipient.email || "",
-
-      telefono:
-        recipient.telefono || "",
-
+      telefono: numero || "",
       codsoc:
         recipient.codsoc || 0,
-
       attributi:
         recipient.attributi || [],
     });
@@ -394,12 +417,8 @@ export default function GestioneDestinatari() {
   }
 
   return (
-    <div className="flex">
-
-      <Sidebar />
-
-      <div className="flex-1 bg-slate-50 p-8">
-
+    <PageLayout>
+      <div className="bg-slate-50 p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
 
           {/* HEADER */}
@@ -519,18 +538,24 @@ export default function GestioneDestinatari() {
                     className="border p-2 rounded"
                   />
 
-                  <input
-                    type="text"
-                    placeholder="Telefono"
+                  <PhoneInput
+                    country={"it"}
                     value={formData.telefono}
-                    onChange={(e) =>
+                    onChange={(phone) =>
                       setFormData({
                         ...formData,
-                        telefono:
-                          e.target.value,
+                        telefono: phone,
                       })
                     }
-                    className="border p-2 rounded"
+                    enableSearch
+                    searchPlaceholder="Cerca paese..."
+                    specialLabel=""
+                    countryCodeEditable={false}
+                    inputClass="!w-full !h-[42px] !border !border-slate-300 !rounded-md"
+                    containerClass="!w-full"
+                    buttonClass="!border !border-slate-300 !bg-white"
+                    dropdownClass="!text-black"
+                    placeholder="Inserisci numero"
                   />
                 </div>
 
@@ -674,7 +699,8 @@ export default function GestioneDestinatari() {
 
             ) : (
 
-              <table className="w-full">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-full table-auto">
 
                 <thead className="bg-slate-50">
 
@@ -768,10 +794,11 @@ export default function GestioneDestinatari() {
                   )}
                 </tbody>
               </table>
+            </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
