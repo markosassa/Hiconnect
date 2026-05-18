@@ -1,8 +1,17 @@
 import { useEffect, useState, useMemo } from "react";
 import PageLayout from "./PageLayout";
 import {
-  History, Calendar, Users, Mail,
-  MessageCircle, Link2, Paperclip, ChevronDown, ChevronUp, Filter, X,
+  History,
+  Calendar,
+  Users,
+  Mail,
+  MessageCircle,
+  Link2,
+  Paperclip,
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  X,
 } from "lucide-react";
 import { format } from "date-fns";
 import axios from "axios";
@@ -16,7 +25,20 @@ type Allegato = {
   nomefile: string;
   path: string;
 };
+type Ordinamento = {
+  campo:
+    | "datainserimento"
+    | "messaggio"
+    | "num_destinatari"
+    | "canali"
+    | "fstato";
 
+  direzione: "asc" | "desc";
+};
+type Link = {
+  idlink: number;
+  url: string;
+};
 type Comunicazione = {
   codsoc: number;
   idcomunicazione: number;
@@ -26,10 +48,16 @@ type Comunicazione = {
   datainvio: string | null;
   num_destinatari: number;
   canali?: string[];
-  links?: string[];
+  links?: Link[];
   allegati?: Allegato[];
 };
-
+type Destinatario = {
+  iddestinatario: number;
+  nome: string;
+  cognome: string;
+  email?: string;
+  telefono?: string;
+};
 type Filtri = {
   dataFrom: string;
   dataTo: string;
@@ -70,7 +98,13 @@ function StatoBadge({ fstato }: { fstato: number }) {
 /**
  * RIGA ESPANDIBILE
  */
-function RigaComunicazione({ comm }: { comm: Comunicazione }) {
+function RigaComunicazione({
+  comm,
+  onOpenDestinatari,
+}: {
+  comm: Comunicazione;
+  onOpenDestinatari: (comm: Comunicazione) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
 
   const hasDetails =
@@ -88,7 +122,7 @@ function RigaComunicazione({ comm }: { comm: Comunicazione }) {
         <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
-            {format(new Date(comm.datainserimento), "dd/MM/yyyy")}
+            {format(new Date(comm.datainserimento), "HH:mm dd/MM/yyyy ")}
           </div>
         </td>
 
@@ -99,10 +133,16 @@ function RigaComunicazione({ comm }: { comm: Comunicazione }) {
 
         {/* DESTINATARI */}
         <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
-          <div className="flex items-center gap-1">
-            <Users className="w-4 h-4 text-slate-400" />
-            {comm.num_destinatari}
-          </div>
+          <button
+            onClick={() => onOpenDestinatari(comm)}
+            className="flex items-center gap-1 hover:text-indigo-600 transition-colors group"
+            aria-label="Vedi destinatari"
+          >
+            <Users className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+            <span className="group-hover:underline">
+              {comm.num_destinatari}
+            </span>
+          </button>
         </td>
 
         {/* CANALI */}
@@ -117,7 +157,11 @@ function RigaComunicazione({ comm }: { comm: Comunicazione }) {
                     : "bg-green-100 text-green-700"
                 }`}
               >
-                {canale === "email" ? <Mail className="w-3 h-3" /> : <MessageCircle className="w-3 h-3" />}
+                {canale === "email" ? (
+                  <Mail className="w-3 h-3" />
+                ) : (
+                  <MessageCircle className="w-3 h-3" />
+                )}
                 {canale === "email" ? "Email" : "WhatsApp"}
               </span>
             ))}
@@ -137,7 +181,11 @@ function RigaComunicazione({ comm }: { comm: Comunicazione }) {
               className="text-slate-400 hover:text-slate-600 transition-colors"
               aria-label={expanded ? "Chiudi dettagli" : "Apri dettagli"}
             >
-              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {expanded ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
             </button>
           )}
         </td>
@@ -148,7 +196,6 @@ function RigaComunicazione({ comm }: { comm: Comunicazione }) {
         <tr className="bg-slate-50 border-b border-slate-100">
           <td colSpan={6} className="px-6 py-4">
             <div className="space-y-3">
-
               {/* MESSAGGIO COMPLETO */}
               <div className="bg-white rounded-lg p-3 text-sm text-slate-700 whitespace-pre-wrap border border-slate-100">
                 {comm.messaggio}
@@ -164,13 +211,13 @@ function RigaComunicazione({ comm }: { comm: Comunicazione }) {
                   <div className="space-y-1">
                     {comm.links.map((link, idx) => (
                       <a
-                        key={idx}
-                        href={link}
+                        key={link.idlink}
+                        href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block text-sm text-indigo-600 hover:underline truncate"
                       >
-                        {link}
+                        {link.url}
                       </a>
                     ))}
                   </div>
@@ -206,7 +253,101 @@ function RigaComunicazione({ comm }: { comm: Comunicazione }) {
     </>
   );
 }
+function PopupDestinatari({
+  comm,
+  onClose,
+}: {
+  comm: Comunicazione;
+  onClose: () => void;
+}) {
+  const { user } = useAuth();
 
+  const [destinatari, setDestinatari] = useState<Destinatario[]>([]);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDestinatari = async () => {
+      try {
+        const res = await axios.get(
+          `/api/comunicazioni/${user?.codsoc}/${comm.idcomunicazione}/destinatari`
+        );
+
+        setDestinatari(res.data.data || []);
+      } catch {
+        setDestinatari([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDestinatari();
+  }, [comm.idcomunicazione, user?.codsoc]);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl mx-4 overflow-hidden">
+        <div className="px-5 py-4 border-b flex justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5" />
+
+            <span>Destinatari</span>
+
+            <span className="bg-slate-100 px-2 rounded-full text-xs">
+              {comm.num_destinatari}
+            </span>
+          </div>
+
+          <button onClick={onClose}>
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="max-h-[500px] overflow-auto">
+          {loading ? (
+            <div className="p-6 text-center">Caricamento...</div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-slate-50 sticky top-0">
+                <tr>
+                  <th className="px-4 py-3 text-left">Nome</th>
+
+                  <th className="px-4 py-3 text-left">Email</th>
+
+                  <th className="px-4 py-3 text-left">WhatsApp</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {destinatari.map((d) => (
+                  <tr
+                    key={d.iddestinatario}
+                    className="border-b hover:bg-slate-50"
+                  >
+                    <td className="px-4 py-3">
+                      {d.nome} {d.cognome}
+                    </td>
+
+                    <td className="px-4 py-3">{d.email || "-"}</td>
+
+                    <td className="px-4 py-3">{d.telefono || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 /**
  * PANNELLO FILTRI
  */
@@ -282,7 +423,9 @@ function PanelloFiltri({
           <label className="block text-xs text-slate-500 mb-1">Stato</label>
           <select
             value={filtri.stato}
-            onChange={(e) => onChange({ stato: e.target.value as Filtri["stato"] })}
+            onChange={(e) =>
+              onChange({ stato: e.target.value as Filtri["stato"] })
+            }
             className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
           >
             <option value="">Tutti</option>
@@ -297,7 +440,9 @@ function PanelloFiltri({
           <label className="block text-xs text-slate-500 mb-1">Canale</label>
           <select
             value={filtri.canale}
-            onChange={(e) => onChange({ canale: e.target.value as Filtri["canale"] })}
+            onChange={(e) =>
+              onChange({ canale: e.target.value as Filtri["canale"] })
+            }
             className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
           >
             <option value="">Tutti</option>
@@ -315,11 +460,19 @@ function PanelloFiltri({
  */
 export default function StoricoComunicazioni() {
   const { user, hasFunzione } = useAuth();
-
+  const [ordinamento, setOrdinamento] = useState<Ordinamento>({
+    campo: "datainserimento",
+    direzione: "desc",
+  });
   const [communications, setCommunications] = useState<Comunicazione[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtri, setFiltri] = useState<Filtri>(FILTRI_DEFAULT);
+  const [commSelezionata, setCommSelezionata] = useState<Comunicazione | null>(
+    null
+  );
+  const [paginaCorrente, setPaginaCorrente] = useState(1);
 
+  const elementiPerPagina = 10;
   const fetchCommunications = async () => {
     try {
       const res = await axios.get(`/api/comunicazioni/${user?.codsoc}`);
@@ -338,12 +491,26 @@ export default function StoricoComunicazioni() {
     }
   }, [user]);
 
+  useEffect(() => {
+    setPaginaCorrente(1);
+  }, [filtri]);
+
+  const iconaOrdinamento = (campo: Ordinamento["campo"]) => {
+    if (ordinamento.campo !== campo) {
+      return null;
+    }
+
+    return ordinamento.direzione === "asc" ? (
+      <ChevronUp className="w-4 h-4" />
+    ) : (
+      <ChevronDown className="w-4 h-4" />
+    );
+  };
   /**
    * FILTRO IN MEMORIA — nessuna chiamata API extra al cambio filtro
    */
   const comunicazioniFiltrate = useMemo(() => {
     return communications.filter((comm) => {
-
       if (filtri.dataFrom) {
         const from = new Date(filtri.dataFrom);
         from.setHours(0, 0, 0, 0);
@@ -356,14 +523,71 @@ export default function StoricoComunicazioni() {
         if (new Date(comm.datainserimento) > to) return false;
       }
 
-      if (filtri.stato !== "" && comm.fstato !== Number(filtri.stato)) return false;
+      if (filtri.stato !== "" && comm.fstato !== Number(filtri.stato))
+        return false;
 
       if (filtri.canale && !comm.canali?.includes(filtri.canale)) return false;
 
       return true;
     });
   }, [communications, filtri]);
+  const totalePagine = Math.ceil(
+    comunicazioniFiltrate.length / elementiPerPagina
+  );
+  const cambiaOrdinamento = (campo: Ordinamento["campo"]) => {
+    setOrdinamento((prev) => {
+      if (prev.campo === campo) {
+        return {
+          campo,
+          direzione: prev.direzione === "asc" ? "desc" : "asc",
+        };
+      }
 
+      return {
+        campo,
+        direzione: "asc",
+      };
+    });
+  };
+  const comunicazioniOrdinate = useMemo(() => {
+    const dati = [...comunicazioniFiltrate];
+
+    dati.sort((a, b) => {
+      let valoreA: any = a[ordinamento.campo];
+
+      let valoreB: any = b[ordinamento.campo];
+
+      if (ordinamento.campo === "datainserimento") {
+        valoreA = new Date(valoreA).getTime();
+
+        valoreB = new Date(valoreB).getTime();
+      }
+
+      if (ordinamento.campo === "messaggio") {
+        valoreA = valoreA.toLowerCase();
+
+        valoreB = valoreB.toLowerCase();
+      }
+
+      if (valoreA < valoreB) {
+        return ordinamento.direzione === "asc" ? -1 : 1;
+      }
+
+      if (valoreA > valoreB) {
+        return ordinamento.direzione === "asc" ? 1 : -1;
+      }
+
+      return 0;
+    });
+
+    return dati;
+  }, [comunicazioniFiltrate, ordinamento]);
+
+  const comunicazioniPaginate = useMemo(() => {
+    const start = (paginaCorrente - 1) * elementiPerPagina;
+
+    return comunicazioniOrdinate.slice(start, start + elementiPerPagina);
+  }, [comunicazioniOrdinate, paginaCorrente]);
   if (!hasFunzione("storico")) {
     return <div className="p-6 text-red-600">Accesso negato</div>;
   }
@@ -372,7 +596,6 @@ export default function StoricoComunicazioni() {
     <PageLayout>
       <div className="bg-slate-50 p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
-
           {/* HEADER */}
           <div className="flex items-center gap-3 mb-6">
             <History className="w-8 h-8 text-emerald-600" />
@@ -397,16 +620,14 @@ export default function StoricoComunicazioni() {
             <div className="bg-white rounded-xl shadow-md p-8 text-center text-slate-500">
               Caricamento...
             </div>
-
-          /* NESSUNA COMUNICAZIONE */
-          ) : communications.length === 0 ? (
+          ) : /* NESSUNA COMUNICAZIONE */
+          communications.length === 0 ? (
             <div className="bg-white rounded-xl shadow-md p-12 text-center">
               <Mail className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <p className="text-slate-500">Nessuna comunicazione presente</p>
             </div>
-
-          /* NESSUN RISULTATO CON FILTRI ATTIVI */
-          ) : comunicazioniFiltrate.length === 0 ? (
+          ) : /* NESSUN RISULTATO CON FILTRI ATTIVI */
+          comunicazioniFiltrate.length === 0 ? (
             <div className="bg-white rounded-xl shadow-md p-12 text-center">
               <Filter className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <p className="text-slate-500 mb-3">
@@ -419,32 +640,108 @@ export default function StoricoComunicazioni() {
                 Azzera filtri
               </button>
             </div>
-
-          /* TABELLA */
           ) : (
+            /* TABELLA */
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left min-w-full table-auto">
+                <table className="w-full min-w-[900px] table-auto">
                   <thead className="bg-slate-50">
                     <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Data</th>
-                      <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Messaggio</th>
-                      <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Destinatari</th>
-                      <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Canali</th>
-                      <th className="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">Stato</th>
-                      <th className="px-4 py-3 w-10" />
+                      <th className="px-4 py-3">
+                        <button
+                          onClick={() => cambiaOrdinamento("datainserimento")}
+                          className="
+     flex items-center gap-1
+   "
+                        >
+                          Data
+                          {iconaOrdinamento("datainserimento")}
+                        </button>
+                      </th>
+
+                      <th className="px-4 py-3">
+                        <button
+                          onClick={() => cambiaOrdinamento("messaggio")}
+                          className="
+      flex items-center gap-1
+   "
+                        >
+                          Messaggio
+                          {iconaOrdinamento("messaggio")}
+                        </button>
+                      </th>
+
+                      <th className="px-4 py-3">
+                        <button
+                          onClick={() => cambiaOrdinamento("num_destinatari")}
+                          className="
+      flex items-center gap-1
+   "
+                        >
+                          Destinatari
+                          {iconaOrdinamento("num_destinatari")}
+                        </button>
+                      </th>
+
+                      <th className="px-4 py-3">
+                        <button
+                          onClick={() => cambiaOrdinamento("fstato")}
+                          className="
+      flex items-center gap-1
+   "
+                        >
+                          Stato
+                          {iconaOrdinamento("fstato")}
+                        </button>
+                      </th>
                     </tr>
-                </thead>
-                <tbody>
-                  {comunicazioniFiltrate.map((comm) => (
-                    <RigaComunicazione
-                      key={`${comm.codsoc}-${comm.idcomunicazione}`}
-                      comm={comm}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {comunicazioniPaginate.map((comm) => (
+                      <RigaComunicazione
+                        key={`${comm.codsoc}-${comm.idcomunicazione}`}
+                        comm={comm}
+                        onOpenDestinatari={setCommSelezionata}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+                <div className="flex justify-between items-center px-4 py-4 border-t">
+                  <div className="text-sm text-slate-500">
+                    Pagina {paginaCorrente} di {totalePagine}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      disabled={paginaCorrente === 1}
+                      onClick={() => setPaginaCorrente((p) => p - 1)}
+                      className="
+                            px-3 py-1 border rounded
+                            disabled:opacity-50
+                        "
+                    >
+                      Precedente
+                    </button>
+
+                    <button
+                      disabled={paginaCorrente === totalePagine}
+                      onClick={() => setPaginaCorrente((p) => p + 1)}
+                      className="
+                            px-3 py-1 border rounded
+                            disabled:opacity-50
+                        "
+                    >
+                      Successiva
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {commSelezionata && (
+                <PopupDestinatari
+                  comm={commSelezionata}
+                  onClose={() => setCommSelezionata(null)}
+                />
+              )}
             </div>
           )}
         </div>
