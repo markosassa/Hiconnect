@@ -49,11 +49,22 @@ type Recipient = {
   attributi: RecipientAttribute[];
 };
 
+type AttributoOpzione = {
+  codsoc: number;
+  idattributo: number;
+  idopzione: number;
+  valore: string;
+};
+  type FiltroAttributo = {
+  idattributo: number;
+  valore: string;
+};
 type Attributo = {
   codsoc: number;
   idattributo: number;
   nomeattributo: string;
   tipoattributo: number;
+  opzioni?: AttributoOpzione[];
 };
 
 type Feedback = {
@@ -75,8 +86,7 @@ export default function NuovaComunicazione() {
     "tutti" | "singolo" | "attributo"
   >("tutti");
 
-  const [destinatarioSelezionato, setDestinatarioSelezionato] =
-    useState<number | null>(null);
+  const [destinatariSelezionati, setDestinatariSelezionati] = useState<number[]>([]);
 
   const [attributoFiltro, setAttributoFiltro] =
     useState<number | null>(null);
@@ -85,6 +95,8 @@ export default function NuovaComunicazione() {
 
   const [oggetto, setOggetto] = useState("");
   const [contenuto, setContenuto] = useState("");
+  const [matchMode, setMatchMode] =
+  useState<"AND" | "OR">("AND");
 
   const [links, setLinks] = useState<string[]>([]);
   const [allegati, setAllegati] = useState<File[]>([]);
@@ -110,6 +122,9 @@ export default function NuovaComunicazione() {
   const [feedback, setFeedback] =
     useState<Feedback | null>(null);
 
+
+const [filtriAttributi, setFiltriAttributi] =
+  useState<FiltroAttributo[]>([]);
   /**
    * FEEDBACK AUTO HIDE
    */
@@ -158,18 +173,14 @@ export default function NuovaComunicazione() {
       setAttributes([]);
     }
   };
-  const handleSelectDestinatario = (
-  recipientId: number
-) => {
-  setDestinatarioSelezionato(
-    recipientId
-  );
-
+const handleSelectDestinatario = (recipientId: number) => {
   setTipoDestinatari("singolo");
-
-  setShowDestinatarioDialog(false);
-
-  setSearchDestinatario("");
+  setDestinatariSelezionati((prev) => {
+    if (prev.includes(recipientId)) {
+      return prev.filter((id) => id !== recipientId);
+    }
+    return [...prev, recipientId];
+  });
 };
 
 const handleSelectAttributo = (
@@ -232,11 +243,9 @@ const handleSelectAttributo = (
    * SELECTED
    */
 
-  const selectedRecipient = recipients.find(
-    (r) =>
-      r.iddestinatario ===
-      destinatarioSelezionato
-  );
+  const selectedRecipients = recipients.filter((r) =>
+  destinatariSelezionati.includes(r.iddestinatario)
+);
 
   const selectedAttribute = attributes.find(
     (a) =>
@@ -263,46 +272,78 @@ const handleSelectAttributo = (
   };
 
   const getDestinatariCount = () => {
-    if (tipoDestinatari === "tutti") {
-      return recipients.length;
+  if (tipoDestinatari === "tutti") {
+    return recipients.length;
+  }
+
+  if (tipoDestinatari === "singolo") {
+    return destinatariSelezionati.length;
+  }
+
+  if (
+    tipoDestinatari === "attributo"
+  ) {
+    if (
+      filtriAttributi.length === 0
+    ) {
+      return 0;
     }
 
-    if (tipoDestinatari === "singolo") {
-      return destinatarioSelezionato
-        ? 1
-        : 0;
-    }
+    return recipients.filter((r) => {
+      const results =
+        filtriAttributi.map(
+          (filtro) => {
+            const attr =
+              r.attributi.find(
+                (a) =>
+                  a.idattributo ===
+                  filtro.idattributo
+              );
 
-    if (tipoDestinatari === "attributo") {
-      return recipients.filter((r) => {
-        const attr = r.attributi.find(
-          (a) =>
-            a.idattributo ===
-            attributoFiltro
+            if (!attr)
+              return false;
+
+            const attribute =
+              attributes.find(
+                (a) =>
+                  a.idattributo ===
+                  filtro.idattributo
+              );
+
+            if (!attribute)
+              return false;
+
+            if (
+              attribute.tipoattributo ===
+              3
+            ) {
+              return (
+                normalizeBooleanValue(
+                  attr.valore
+                ) ===
+                filtro.valore
+              );
+            }
+
+            return (
+              String(
+                attr.valore
+              ) ===
+              String(
+                filtro.valore
+              )
+            );
+          }
         );
 
-        if (!attr) return false;
+      return matchMode === "AND"
+        ? results.every(Boolean)
+        : results.some(Boolean);
+    }).length;
+  }
 
-        if (
-          selectedAttribute?.tipoattributo ===
-          3
-        ) {
-          return (
-            normalizeBooleanValue(
-              attr.valore
-            ) === valoreFiltro
-          );
-        }
-
-        return (
-          String(attr.valore) ===
-          String(valoreFiltro)
-        );
-      }).length;
-    }
-
-    return 0;
-  };
+  return 0;
+};
 
   /**
    * FORMATTER
@@ -423,14 +464,9 @@ const handleSelectAttributo = (
       );
     }
 
-    if (
-      tipoDestinatari === "singolo" &&
-      destinatarioSelezionato
-    ) {
-      destinatari = [
-        destinatarioSelezionato,
-      ];
-    }
+    if (tipoDestinatari === "singolo") {
+  destinatari = destinatariSelezionati;
+}
 
     if (
       tipoDestinatari === "attributo"
@@ -575,9 +611,7 @@ const handleSelectAttributo = (
 
     setAttributoFiltro(null);
 
-    setDestinatarioSelezionato(
-      null
-    );
+    setDestinatariSelezionati([]);
 
     setTipoDestinatari("tutti");
 
@@ -714,7 +748,7 @@ const handleSelectAttributo = (
                 <button
                   onClick={() => {
                     setTipoDestinatari("tutti");
-                    setDestinatarioSelezionato(null);
+                    setDestinatariSelezionati([]);
                     setAttributoFiltro(null);
                     setValoreFiltro("");
                   }}
@@ -752,89 +786,324 @@ const handleSelectAttributo = (
               </div>
 
               {/* Destinatario Selezionato */}
-              {tipoDestinatari === "singolo" && selectedRecipient && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-slate-50 rounded-lg p-4 border border-slate-200"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-slate-800">
-                        {selectedRecipient.nome} {selectedRecipient.cognome}
-                      </div>
-                      <div className="text-sm text-slate-600">{selectedRecipient.email}</div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setDestinatarioSelezionato(null);
-                        setTipoDestinatari("tutti");
-                      }}
-                      className="text-slate-400 hover:text-red-600"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Attributo Selezionato */}
-              {tipoDestinatari === "attributo" && selectedAttribute && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4"
-                >
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="font-medium text-slate-800">{selectedAttribute.nomeattributo}</div>
-                      <button
-                        onClick={() => {
-                          setAttributoFiltro(null);
-                          setValoreFiltro("");
-                          setTipoDestinatari("tutti");
-                        }}
-                        className="text-slate-400 hover:text-red-600"
+              {tipoDestinatari === "singolo" && selectedRecipients.length > 0 && (
+                <div className="space-y-2">
+                  {selectedRecipients.length > 0 && (
+                   <div className="border rounded-lg overflow-hidden">
+                    {selectedRecipients.map((r) => (
+                      <div
+                        key={r.iddestinatario}
+                        className="flex items-center justify-between px-4 py-2 border-b last:border-b-0"
                       >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
+                        <div className="text-sm font-medium">
+                          {r.nome} {r.cognome}
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Valore
-                      </label>
-                      {selectedAttribute.tipoattributo === 3 ? (
-                        <select
-                          value={valoreFiltro}
-                          onChange={(e) => setValoreFiltro(e.target.value)}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        <div className="text-xs text-slate-500 ">
+                          {r.email } - { r.telefono}
+                        </div>
+
+                        <button
+                          onClick={() =>
+                            setDestinatariSelezionati((prev) =>
+                              prev.filter((id) => id !== r.iddestinatario)
+                            )
+                          }
+                          className="text-red-500 hover:text-red-700"
                         >
-                          <option value="">Seleziona</option>
-                          <option value="1">Si</option>
-                          <option value="0">No</option>
-                        </select>
-                      ) : selectedAttribute.tipoattributo === 2 ? (
-                        <input
-                          type="number"
-                          value={valoreFiltro}
-                          onChange={(e) => setValoreFiltro(e.target.value)}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          placeholder="Inserisci valore"
-                        />
-                      ) : (
-                        <input
-                          type="text"
-                          value={valoreFiltro}
-                          onChange={(e) => setValoreFiltro(e.target.value)}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          placeholder="Inserisci valore"
-                        />
-                      )}
-                    </div>
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                </motion.div>
+                  )}
+                </div>
               )}
+
+             {/* Filtri Attributi */}
+{tipoDestinatari === "attributo" && (
+  <motion.div
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="space-y-4"
+  >
+    {/* HEADER */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <h3 className="font-medium text-slate-800">
+          Filtri Attributi
+        </h3>
+
+        <select
+          value={matchMode}
+          onChange={(e) =>
+            setMatchMode(
+              e.target.value as
+                | "AND"
+                | "OR"
+            )
+          }
+          className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+        >
+          <option value="AND">
+            AND
+          </option>
+
+          <option value="OR">
+            OR
+          </option>
+        </select>
+      </div>
+
+      <button
+        onClick={() =>
+          setShowAttributoDialog(true)
+        }
+        className="
+          px-4
+          py-2
+          bg-indigo-600
+          text-white
+          rounded-lg
+          hover:bg-indigo-700
+          text-sm
+        "
+      >
+        + Aggiungi Filtro
+      </button>
+    </div>
+
+    {/* LISTA FILTRI */}
+    {filtriAttributi.length === 0 && (
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm text-slate-500">
+        Nessun filtro aggiunto
+      </div>
+    )}
+
+    <div className="space-y-4">
+      {filtriAttributi.map(
+        (filtro, index) => {
+          const attribute =
+            attributes.find(
+              (a) =>
+                a.idattributo ===
+                filtro.idattributo
+            );
+
+          if (!attribute)
+            return null;
+
+          return (
+            <div
+              key={index}
+              className="
+                bg-slate-50
+                border
+                border-slate-200
+                rounded-xl
+                p-4
+              "
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="font-medium text-slate-800">
+                    {
+                      attribute.nomeattributo
+                    }
+                  </div>
+
+                  <div className="text-xs text-slate-500">
+                    Filtro #
+                    {index + 1}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setFiltriAttributi(
+                      filtriAttributi.filter(
+                        (
+                          _,
+                          i
+                        ) =>
+                          i !== index
+                      )
+                    );
+                  }}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* BOOLEAN */}
+              {attribute.tipoattributo ===
+              3 ? (
+                <select
+                  value={
+                    filtro.valore
+                  }
+                  onChange={(e) => {
+                    const updated =
+                      [
+                        ...filtriAttributi,
+                      ];
+
+                    updated[
+                      index
+                    ].valore =
+                      e.target.value;
+
+                    setFiltriAttributi(
+                      updated
+                    );
+                  }}
+                  className="
+                    w-full
+                    px-4
+                    py-2
+                    border
+                    border-slate-300
+                    rounded-lg
+                  "
+                >
+                  <option value="">
+                    Seleziona
+                  </option>
+
+                  <option value="1">
+                    Si
+                  </option>
+
+                  <option value="0">
+                    No
+                  </option>
+                </select>
+              ) : attribute.tipoattributo ===
+                4 ? (
+                <select
+                  value={
+                    filtro.valore
+                  }
+                  onChange={(e) => {
+                    const updated =
+                      [
+                        ...filtriAttributi,
+                      ];
+
+                    updated[
+                      index
+                    ].valore =
+                      e.target.value;
+
+                    setFiltriAttributi(
+                      updated
+                    );
+                  }}
+                  className="
+                    w-full
+                    px-4
+                    py-2
+                    border
+                    border-slate-300
+                    rounded-lg
+                  "
+                >
+                  <option value="">
+                    Seleziona
+                  </option>
+
+                  {attribute.opzioni?.map(
+                    (
+                      opzione
+                    ) => (
+                      <option
+                        key={
+                          opzione.idopzione
+                        }
+                        value={
+                          opzione.valore
+                        }
+                      >
+                        {
+                          opzione.valore
+                        }
+                      </option>
+                    )
+                  )}
+                </select>
+              ) : attribute.tipoattributo ===
+                2 ? (
+                <input
+                  type="number"
+                  value={
+                    filtro.valore
+                  }
+                  onChange={(e) => {
+                    const updated =
+                      [
+                        ...filtriAttributi,
+                      ];
+
+                    updated[
+                      index
+                    ].valore =
+                      e.target.value;
+
+                    setFiltriAttributi(
+                      updated
+                    );
+                  }}
+                  placeholder="Inserisci valore"
+                  className="
+                    w-full
+                    px-4
+                    py-2
+                    border
+                    border-slate-300
+                    rounded-lg
+                  "
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={
+                    filtro.valore
+                  }
+                  onChange={(e) => {
+                    const updated =
+                      [
+                        ...filtriAttributi,
+                      ];
+
+                    updated[
+                      index
+                    ].valore =
+                      e.target.value;
+
+                    setFiltriAttributi(
+                      updated
+                    );
+                  }}
+                  placeholder="Inserisci valore"
+                  className="
+                    w-full
+                    px-4
+                    py-2
+                    border
+                    border-slate-300
+                    rounded-lg
+                  "
+                />
+              )}
+            </div>
+          );
+        }
+      )}
+    </div>
+  </motion.div>
+)}
+              
 
               {tipoDestinatari === "tutti" && recipients.length === 0 && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800 text-sm">
@@ -1088,25 +1357,45 @@ const handleSelectAttributo = (
                     <button
                       key={recipient.iddestinatario}
                       onClick={() => handleSelectDestinatario(recipient.iddestinatario)}
-                      className="w-full px-6 py-4 hover:bg-indigo-50 transition-colors text-left"
+                      className={`w-full px-6 py-4 text-left transition-colors flex justify-between ${
+                        destinatariSelezionati.includes(recipient.iddestinatario)
+                          ? "bg-indigo-50"
+                          : "hover:bg-indigo-50"
+                      }`}
                     >
                       <div className="font-medium text-slate-800">
                         {recipient.nome} {recipient.cognome}
                       </div>
                       <div className="text-sm text-slate-600">{recipient.email}</div>
                       <div className="text-sm text-slate-500">{recipient.telefono}</div>
+                      {destinatariSelezionati.includes(recipient.iddestinatario) && (
+              <CheckCircle className="w-5 h-5 text-indigo-600" />
+            )}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <div className="p-6 border-t border-slate-200 flex gap-3 justify-end">
+           <div className="p-6 border-t border-slate-200 flex gap-3 justify-end">
               <Dialog.Close asChild>
                 <button className="px-6 py-2.5 rounded-lg bg-slate-100 text-slate-700 font-medium hover:bg-slate-200 transition-colors">
                   Annulla
                 </button>
               </Dialog.Close>
+
+              <button
+                onClick={() => {
+                  if (destinatariSelezionati.length === 0) return;
+
+                  setTipoDestinatari("singolo");
+                  setShowDestinatarioDialog(false);
+                }}
+                disabled={destinatariSelezionati.length === 0}
+                className="px-6 py-2.5 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Conferma ({destinatariSelezionati.length})
+              </button>
             </div>
           </Dialog.Content>
         </Dialog.Portal>
@@ -1147,12 +1436,37 @@ const handleSelectAttributo = (
                   {filteredAttributes.map((attribute) => (
                     <button
                       key={attribute.idattributo}
-                      onClick={() => handleSelectAttributo(attribute.idattributo)}
+                      onClick={() => {
+                        setFiltriAttributi([
+                          ...filtriAttributi,
+                          {
+                            idattributo:
+                              attribute.idattributo,
+                            valore: "",
+                          },
+                        ]);
+
+                        setTipoDestinatari(
+                          "attributo"
+                        );
+
+                        setShowAttributoDialog(false);
+                      }}
                       className="w-full p-4 border-2 border-slate-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left"
                     >
                       <div className="font-medium text-slate-800">{attribute.nomeattributo}</div>
                       <div className="text-sm text-slate-500 mt-1">
-                        Tipo: {attribute.tipoattributo === 1 ? "Testo" : attribute.tipoattributo === 2 ? "Numero" : "Si/No"}
+                        Tipo: {
+                        attribute.tipoattributo === 1
+                          ? "Testo"
+                          : attribute.tipoattributo === 2
+                          ? "Numero"
+                          : attribute.tipoattributo === 3
+                          ? "Si/No"
+                          : attribute.tipoattributo === 4
+                          ? "Menu a Tendina"
+                          : "Sconosciuto"
+                      }
                       </div>
                     </button>
                   ))}

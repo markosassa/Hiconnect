@@ -16,6 +16,7 @@ type Attributo = {
   idattributo: number;
   nomeattributo: string;
   tipoattributo: number;
+  opzioni?: string[];
 };
 
 type AttributesResponse = {
@@ -49,8 +50,9 @@ export default function GestioneAttributi() {
     useState({
       nomeattributo: "",
       tipoattributo: 1,
-      codsoc:
-        user?.codsoc || 0,
+      codsoc: user?.codsoc || 0,
+      opzioni: [] as string[],
+      nuovoValore: "",
     });
 
   const getErrorMessage = (
@@ -134,7 +136,15 @@ export default function GestioneAttributi() {
       clearTimeout(timer);
 
   }, [alert]);
-
+  useEffect(() => {
+  if (formData.tipoattributo !== 4) {
+    setFormData((prev) => ({
+      ...prev,
+      opzioni: [],
+      nuovoValore: "",
+    }));
+  }
+}, [formData.tipoattributo]);
   const handleSubmit = async (
     e: React.FormEvent
   ) => {
@@ -190,7 +200,7 @@ export default function GestioneAttributi() {
     setEditingAttribute(
       attribute
     );
-
+    
     setFormData({
       nomeattributo:
         attribute.nomeattributo || "",
@@ -200,6 +210,10 @@ export default function GestioneAttributi() {
 
       codsoc:
         attribute.codsoc || 0,
+        opzioni: parseOpzioni(attribute.opzioni),
+
+
+      nuovoValore: "",
     });
 
     setShowForm(true);
@@ -249,7 +263,10 @@ export default function GestioneAttributi() {
       });
     }
   };
-
+  const parseOpzioni = (opzioni?: any[]) => {
+  if (!opzioni) return [];
+  return opzioni.map(o => typeof o === "string" ? o : o.valore);
+};
   const resetForm = () => {
 
     setFormData({
@@ -257,6 +274,8 @@ export default function GestioneAttributi() {
       tipoattributo: 1,
       codsoc:
         user?.codsoc || 0,
+      opzioni: [],
+      nuovoValore: "",
     });
 
     setEditingAttribute(null);
@@ -278,6 +297,8 @@ export default function GestioneAttributi() {
 
       case 3:
         return "Booleano";
+      case 4:
+        return "Select";
 
       default:
         return "Sconosciuto";
@@ -411,7 +432,73 @@ export default function GestioneAttributi() {
                     <option value={3}>
                       Booleano
                     </option>
+
+                    <option value={4}>
+                      Select
+                    </option>
                   </select>
+                  {formData.tipoattributo === 4 && (
+
+                    <div className="col-span-2 border rounded-lg p-4 bg-slate-50">
+
+                      <label className="block text-sm font-medium mb-2">
+                        Valori menu a tendina
+                      </label>
+                      {/* 👇 QUI */}
+                      {formData.opzioni.length > 0 && (
+
+                        <div className="text-xs text-slate-500 mb-3">
+                          Valori attuali: {formData.opzioni.join(", ")}
+                        </div>
+                      )}
+                      <div className="flex gap-2 mb-3">
+
+                        <input
+                          type="text"
+                          placeholder="Nuovo valore"
+                          value={formData.nuovoValore}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              nuovoValore: e.target.value,
+                            })
+                          }
+                          className="border p-2 rounded w-full"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => {
+
+                            if (!formData.nuovoValore.trim()) return;
+
+                            setFormData({
+                              ...formData,
+                              opzioni: [
+                                ...formData.opzioni,
+                                formData.nuovoValore,
+                              ],
+                              nuovoValore: "",
+                            });
+                          }}
+                          className="bg-emerald-600 text-white px-4 rounded"
+                        >
+                          Aggiungi
+                        </button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1 mb-3">
+  {formData.opzioni.map((v, i) => (
+    <span
+      key={i}
+      className="px-2 py-1 bg-white border rounded-full text-xs"
+    >
+      {v}
+    </span>
+  ))}
+</div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2">

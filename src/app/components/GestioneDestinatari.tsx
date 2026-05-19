@@ -18,11 +18,19 @@ import {
 import PageLayout from "./PageLayout";
 import { useAuth } from "../../hooks/useAuth";
 
+type AttributoOpzione = {
+  id: number;
+  ordine: number;
+  valore: string;
+};
+
 type Attributo = {
   codsoc: number;
   idattributo: number;
   nomeattributo: string;
   tipoattributo: number;
+
+  opzioni?: AttributoOpzione[];
 };
 
 type RecipientAttribute = {
@@ -657,6 +665,41 @@ export default function GestioneDestinatari() {
                                 </option>
                               </select>
                             )}
+
+                            {/* SELECT */}
+
+                              {attribute.tipoattributo === 4 && (
+
+                                <select
+                                  value={getAttributeValue(
+                                    attribute.idattributo
+                                  )}
+                                  onChange={(e) =>
+                                    handleAttributeChange(
+                                      attribute.idattributo,
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full border p-2 rounded"
+                                >
+
+                                  <option value="">
+                                    Seleziona
+                                  </option>
+
+                                  {attribute.opzioni?.map(
+                                    (opzione) => (
+
+                                      <option
+                                        key={opzione.id}
+                                        value={opzione.valore}
+                                      >
+                                        {opzione.valore}
+                                      </option>
+                                    )
+                                  )}
+                                </select>
+                              )}
                           </div>
                         )
                       )}
