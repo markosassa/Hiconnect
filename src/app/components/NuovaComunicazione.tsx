@@ -465,45 +465,31 @@ const handleSelectAttributo = (
     }
 
     if (tipoDestinatari === "singolo") {
-  destinatari = destinatariSelezionati;
-}
-
-    if (
-      tipoDestinatari === "attributo"
-    ) {
-      destinatari = recipients
-        .filter((r) => {
-          const attr =
-            r.attributi.find(
-              (a) =>
-                a.idattributo ===
-                attributoFiltro
-            );
-
-          if (!attr) return false;
-
-          if (
-            selectedAttribute?.tipoattributo ===
-            3
-          ) {
-            return (
-              normalizeBooleanValue(
-                attr.valore
-              ) === valoreFiltro
-            );
-          }
-
-          return (
-            String(attr.valore) ===
-            String(valoreFiltro)
-          );
-        })
-        .map(
-          (r) =>
-            r.iddestinatario
-        );
+      destinatari = destinatariSelezionati;
     }
 
+    if (tipoDestinatari === "attributo") {
+      destinatari = recipients.filter((r) => {
+    const results = filtriAttributi.map((filtro) => {
+      const attr = r.attributi.find(
+        (a) => a.idattributo === filtro.idattributo
+      );
+      if (!attr) return false;
+      const attribute = attributes.find(
+        (a) => a.idattributo === filtro.idattributo
+      );
+      if (!attribute) return false;
+      if (attribute.tipoattributo === 3) {
+        return normalizeBooleanValue(attr.valore) === filtro.valore;
+      }
+      return String(attr.valore) === String(filtro.valore);
+    });
+    return matchMode === "AND"
+      ? results.every(Boolean)
+      : results.some(Boolean);
+  }).map((r) => r.iddestinatario);
+}
+    console.log("Destinatari:", destinatari);
     if (destinatari.length === 0) {
       setFeedback({
         type: "error",
@@ -630,7 +616,7 @@ const handleSelectAttributo = (
   } finally {
     setLoading(false);
   }
-};
+  };
 
   /**
    * VALIDATION
